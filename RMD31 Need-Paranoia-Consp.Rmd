@@ -1,0 +1,204 @@
+---
+title: "PsyCorona Need Threat to Compensation"
+author: "Maximilian Agostini, Anton Martinez"
+date: "May 2020"
+output:
+  html_document:
+    code_folding: hide
+    mathjax: default
+    theme: united
+    toc: yes
+    toc_float: yes
+    number_sections: TRUE
+  pdf_document:
+    toc: yes
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+cat("\014") # clear console
+rm(list=ls()) # clear workspace
+gc # garbage collector
+
+require(pacman)
+p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych)
+
+set.seed(52) # set overall random seed for reproducibility
+```
+
+# Load Data
+```{r LoadRawBase, echo=T, warning=F, message=F}
+
+# Import Data
+dtRaw <- haven::read_spss(dir("data/raw data", pattern = "Agostini", full.names = TRUE, ignore.case = TRUE))
+```
+
+# Prepare Data
+## Cleaning
+```{r clean, echo=T, warning=F, message=F}
+# change all -99 into NA
+  dtRaw[dtRaw == -99] <- NA
+
+# make relevant dfs
+dtFull <- dtRaw
+dtCtry <- dtRaw %>% 
+  group_by(coded_country) %>% # group by country
+  filter(n() > 200) # remove countries with less than 100 people
+dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
+  ungroup()
+rm(dtRaw)
+```
+
+## Calculate relevant variables
+```{r calcVars, echo=T, warning=F, message=F}
+# disempowerment
+  dtCtry$disemp.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("fail"), -contains("DO")) %>% na_if(., -99),
+                                min = -2, max = 2)$scores
+  dtCtry$disemp.c <- scale(dtCtry$disemp.m, scale = F, center = T)
+  dtCtry$disemp.z <- scale(dtCtry$disemp.m, scale = T)
+  dtCtry$disemp.fa <- fa(dtCtry %>% dplyr::select(starts_with("fail"), -contains("DO")))$scores
+
+# paranoia
+  dtCtry$para.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("para"), -contains("DO")) %>% na_if(., -99),
+                                min = 0, max = 10)$scores
+  dtCtry$para.c <- scale(dtCtry$para.m, scale = F, center = T)
+  dtCtry$para.z <- scale(dtCtry$para.m, scale = T)
+  dtCtry$para.fa <- fa(dtCtry %>% dplyr::select(starts_with("para"), -contains("DO")))$scores
+
+# conspiracy
+  dtCtry$consp.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("consp"), -contains("DO")) %>% na_if(., -99),
+                                min = 0, max = 10)$scores
+  dtCtry$consp.c <- scale(dtCtry$consp.m, scale = F, center = T)
+  dtCtry$consp.z <- scale(dtCtry$consp.m, scale = T)
+  dtCtry$consp.fa <- fa(dtCtry %>% dplyr::select(starts_with("consp"), -contains("DO")))$scores
+  
+# final step is grouping the data
+  dtCtry <- dtCtry %>% 
+    group_by(coded_country)
+```
+
+# RMD12: Emotion and Compensation
+```{r explrFactor12}
+model <- '# Model 
+            disemp  =~ fail01 + fail02 + fail03 
+            disc =~ disc01 + disc02 + disc03
+            PFS =~ PFS01 + PFS02 + PFS03
+            jbInsec =~ jbInsec01 + jbInsec02 + jbInsec03'
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+```
+
+# RMD20: Disempowerment Constructs
+## Analysis
+```{r explrFactor}
+model <- '# Model 
+            disemp  =~ fail01 + fail02 + fail03 
+            disc =~ disc01 + disc02 + disc03
+            PFS =~ PFS01 + PFS02 + PFS03
+            jbInsec =~ jbInsec01 + jbInsec02 + jbInsec03'
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T)
+
+# by country all
+  fitGroup <- sem(model, data = dtCtry, group = "coded_country")
+  summary(fitGroup, fit.measures=TRUE)
+  lavaanPlot::lavaanPlot(model = fit, coefs = T)
+  
+# by country constrained
+  fitGroupConstr <- sem(model, dtCtry, group = "coded_country", group.equal = c("intercepts", "regressions"))
+  
+# compare unconstrained and constrained
+  anova(fitGroup, fitGroupConstr)
+```
+We are definitely observing a difference between the constrained and unconstrained model.
+
+```{r modelTest}
+model <- '# Model 
+            disemp  =~ fail01 + fail02 + fail03 
+            disc =~ disc01 + disc02 + disc03
+            proSo =~ disc01 + disc02 + disc03
+          # Regression
+            
+         '
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T)
+```
+
+# RMD31: Disempowerment, Paranoia, Conspiracy
+```{r ana31}
+model <- '# Model 
+            disemp  =~ fail01 + fail02 + fail03 
+            para =~ para01 + para02 + para03
+            consp =~ consp01 + consp02 + consp03
+          # Correlations
+            para ~~ disemp
+            consp ~~ disemp + para
+          '  
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T)
+```
+
+
+```{r ana31}
+model <- '# Model 
+            disemp  =~ fail01 + fail02 + fail03 
+            para =~ para01 + para02 + para03
+            consp =~ consp01 + consp02 + consp03
+          # Regression
+            para ~ disemp
+            consp ~ disemp + para
+          '  
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T)
+```
+
+
+```{r ana31}
+
+modNull <- lme4::lmer(consp.m ~ 1 + (1|coded_country), data = dtCtry)
+summary(modNull)
+
+mod1Fix <- lme4::lmer(consp.m ~ disemp.z + (1|coded_country), data = dtCtry)
+summary(mod1Fix)
+
+mod1Rand <- lme4::lmer(consp.m ~ disemp.c + (1 + disemp.c|coded_country), data = dtCtry)
+anova(mod1Fix, mod1Rand)
+summary(mod1Rand)
+sjPlot::tab_model(mod1Rand, show.df = TRUE)
+
+sjPlot::plot_model(mod1Rand, type = c("diag"))
+sjPlot::plot_model(mod1Rand, type = c("est"), show.values = T)
+sjPlot::plot_model(mod1Rand, type = c("re"), show.values = T, value.offset = .5)
+
+mod2Fix <- lme4::lmer(consp.m ~ para.c + (1|coded_country), data = dtCtry)
+summary(mod2Fix)
+mod2Rand <- lme4::lmer(consp.m ~ para.c + (1 + para.c|coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
+sjPlot::plot_model(mod2Rand, type = c("re"), show.values = T, value.offset = .5)
+
+
+mod3Rand <- lme4::lmer(consp.m ~ disemp.c + para.c + (para.c + disemp.c|coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
+summary(mod3Rand)
+sjPlot::plot_model(mod2Rand, type = c("est"), show.values = T)
+sjPlot::plot_model(mod2Rand, type = c("re"), show.values = T, value.offset = .5)
+
+sjPlot::tab_model(mod1Rand, mod2Rand, mod3Rand, show.df = TRUE)
+
+
+```
+
+Test longitudinal for wave 5
+

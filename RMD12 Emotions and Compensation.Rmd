@@ -1,0 +1,296 @@
+---
+title: "PsyCorona Need Threat to Compensation"
+author: "Maximilian Agostini, Anton Martinez"
+date: "May 2020"
+output:
+  html_document:
+    code_folding: hide
+    mathjax: default
+    theme: united
+    toc: yes
+    toc_float: yes
+    number_sections: TRUE
+  pdf_document:
+    toc: yes
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+cat("\014") # clear console
+rm(list=ls()) # clear workspace
+gc # garbage collector
+
+require(pacman)
+p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2)
+
+set.seed(52) # set overall random seed for reproducibility
+```
+
+# Load Data
+```{r LoadRawBase, echo=T, warning=F, message=F}
+
+# Import Data
+dtRaw <- haven::read_spss(dir("data/raw data", pattern = "Agostini", full.names = TRUE, ignore.case = TRUE))
+```
+
+# Prepare Data
+## Cleaning
+```{r clean, echo=T, warning=F, message=F}
+# change all -99 into NA
+  dtRaw[dtRaw == -99] <- NA
+
+# make relevant dfs
+dtFull <- dtRaw
+dtCtry <- dtRaw %>% 
+  group_by(coded_country) %>% # group by country
+  filter(n() > 200) # remove countries with less than 100 people
+dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
+  ungroup()
+rm(dtRaw)
+```
+
+## Calculate relevant variables
+```{r calcVars, echo=T, warning=F, message=F}
+# positive emotion
+  dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% psych::describe()
+  dtCtry$PE.m <- scoreItems(keys=c(1,1,1,1,1),
+                            items = dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% na_if(., -99),
+                                min = 1, max = 5)$scores
+  dtCtry$PE.c <- scale(dtCtry$PE.m, scale = F, center = T)
+  dtCtry$PE.z <- scale(dtCtry$PE.m, scale = T)
+  dtCtry$PE.fa <- fa(dtCtry %>% dplyr::select(starts_with("fail"), -contains("DO")))$scores
+
+# Well-Being
+  # need rescaling first
+    dtCtry$lifeSat <- scales::rescale(as.numeric(dtCtry$lifeSat), to = c(1,10))
+    dtCtry$MLQ <- scales::rescale(as.numeric(dtCtry$MLQ), to = c(1,10))
+  dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% psych::describe()
+  dtCtry$WB.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% na_if(., -99),
+                                min = 1, max = 10)$scores
+  dtCtry$WB.c <- scale(dtCtry$WB.m, scale = F, center = T)
+  dtCtry$WB.z <- scale(dtCtry$WB.m, scale = T)
+  dtCtry$WB.fa <- fa(dtCtry %>% dplyr::select(starts_with("WB"), -contains("DO")))$scores
+
+# pro-Social Behavior
+  dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe()
+  dtCtry$c19ProSo.m <- scoreItems(keys=c(1,1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% na_if(., -99),
+                                min = -3, max = 3)$scores
+  dtCtry$c19ProSo.c <- scale(dtCtry$c19ProSo.m, scale = F, center = T)
+  dtCtry$c19ProSo.z <- scale(dtCtry$c19ProSo.m, scale = T)
+  dtCtry$c19ProSo.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores
+  
+# final step is grouping the data
+  dtCtry <- dtCtry %>% 
+    group_by(coded_country)
+```
+
+# Analysis
+## Confirmatory Factor Analysis
+### Simple Confirmatory Factor Analysis
+```{r explrFactor12}
+model <- '# Model 
+            PE  =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            WB =~ happy + lifeSat + MLQ
+            c19ProSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 + c19ProSo04
+          # Covariances
+            PE ~~ WB
+            PE ~~ c19ProSo
+            WB ~~ c19ProSo'
+fit <- cfa(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+### MultiGroup Confirmatory Factor Analysis
+```{r explrFactor}
+# by country all
+  fitGroup <- cfa(model, data = dtCtry, group = "coded_country")
+  summary(fitGroup, fit.measures=TRUE)
+
+# by country constrained
+  #fitGroupConstr <- sem(model, dtCtry, group = "coded_country", group.equal = c("intercepts", "regressions"))
+  
+# compare unconstrained and constrained
+  #anova(fitGroup, fitGroupConstr)
+```
+
+## MultiLevel Approach
+### PE - Well-Being with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = PE.m, y = WB.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(
+  tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8'
+)
+
+# fit model with fixed slope
+  mod1Fix <- lme4::lmer(WB.m ~ PE.c + (1|coded_country), data = dtCtry)
+  summary(mod1Fix)
+```
+
+### PE - Well-Being with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = PE.m, y = WB.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod1Rand <- lme4::lmer(WB.m ~ PE.c + (1 + PE.c|coded_country), data = dtCtry)
+  anova(mod1Fix, mod1Rand) # test diff
+  summary(mod1Rand)
+  sjPlot::plot_model(mod1Rand, type = c("re"), show.values = T, value.offset = .5)
+
+```
+
+### Pro-Social - Well-Being with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(
+  tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8'
+)
+
+# fit model with fixed slope
+  mod2Fix <- lme4::lmer(WB.m ~ c19ProSo.c + (1|coded_country), data = dtCtry)
+  summary(mod2Fix)
+```
+
+### ProSo - Well-Being with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod2Rand <- lme4::lmer(WB.m ~ c19ProSo.c + (1 + c19ProSo.c|coded_country), data = dtCtry)
+  anova(mod2Fix, mod2Rand) # test diff
+  summary(mod2Rand)
+  sjPlot::plot_model(mod2Rand, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### PE -ProSo - Well-Being with Fixed Slope
+```{r}
+# tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) +
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   theme_minimal()
+# plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod3Fix <- lme4::lmer(WB.m ~ c19ProSo.c + PE.c + (1|coded_country), data = dtCtry)
+  summary(mod3Fix)
+  sjPlot::plot_model(mod3Fix, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### PE -ProSo - Well-Being with Random Slope
+```{r}
+# tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) +
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   theme_minimal()
+# plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod3Rand <- lme4::lmer(WB.m ~ c19ProSo.c + PE.c + (1+ c19ProSo.c + PE.c |coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
+  summary(mod3Rand)
+  sjPlot::plot_model(mod3Rand, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### Table: Multilevel Approach
+```{r}
+sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand)
+```
+
+
+## Multilevel Mediation
+### Simple SEM Model
+```{r}
+model <- '# Model 
+            PE  =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            WB =~ happy + lifeSat + MLQ
+            c19ProSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 + c19ProSo04
+          # Regression
+            c19ProSo ~ a*PE
+            WB ~ b*c19ProSo + c*PE'
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+### Multilevel SEM Model 1-1-1
+First we run a model that has no specified level 2 (only covariances)
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+# saturated model on level 2
+  model <- 'level:1
+            c19ProSo.c ~ a*PE.c
+            WB.m ~ b*c19ProSo.c + c*PE.c
+            level:2
+            c19ProSo.c ~~ PE.c
+            c19ProSo.c ~~ WB.m
+            WB.m ~~ PE.c
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
+
+Next we run a model that also has no level 2 specified (only intercepts)
+```{r}
+# level 2 only intercepts
+  model <- 'level:1
+            c19ProSo.c ~ a*PE.c
+            WB.m ~ b*c19ProSo.c + c*PE.c
+            level:2
+            c19ProSo.c ~ 1
+            PE.c ~1
+            WB.m ~ 1
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
+
+Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+```{r}
+# specified model
+model <- 'level:1
+          c19ProSo.c ~ a*PE.c
+          WB.m ~ b*c19ProSo.c + c*PE.c
+          level:2
+          c19ProSo.c ~ d*PE.c
+          WB.m ~ e*c19ProSo.c + f*PE.c
+          # Indirect and total effects within
+          ab:=a*b
+          totalwith:=ab+c 
+          # Indirect and total effects between
+          de:=d*e
+          totalbw:=de+f' 
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+lavInspect(fit, "icc")
+```
+
+##Test longitudinal
