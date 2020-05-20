@@ -28,7 +28,7 @@ rm(list=ls()) # clear workspace
 gc # garbage collector
 
 require(pacman)
-p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych)
+p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2)
 
 set.seed(52) # set overall random seed for reproducibility
 ```
@@ -59,146 +59,238 @@ rm(dtRaw)
 ## Calculate relevant variables
 ```{r calcVars, echo=T, warning=F, message=F}
 # disempowerment
+  dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% psych::describe()
   dtCtry$disemp.m <- scoreItems(keys=c(1,1,1),
-                                items = dtCtry %>% dplyr::select(starts_with("fail"), -contains("DO")) %>% na_if(., -99),
+                            items = dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% na_if(., -99),
                                 min = -2, max = 2)$scores
   dtCtry$disemp.c <- scale(dtCtry$disemp.m, scale = F, center = T)
   dtCtry$disemp.z <- scale(dtCtry$disemp.m, scale = T)
-  dtCtry$disemp.fa <- fa(dtCtry %>% dplyr::select(starts_with("fail"), -contains("DO")))$scores
+  dtCtry$disemp.fa <- fa(dtCtry %>% dplyr::select(fail01, fail02, fail03))$scores
 
-# paranoia
+# Paranoia
+  dtCtry %>% dplyr::select(para01, para02, para03) %>% psych::describe()
   dtCtry$para.m <- scoreItems(keys=c(1,1,1),
-                                items = dtCtry %>% dplyr::select(starts_with("para"), -contains("DO")) %>% na_if(., -99),
+                                items = dtCtry %>% dplyr::select(para01, para02, para03) %>% na_if(., -99),
                                 min = 0, max = 10)$scores
   dtCtry$para.c <- scale(dtCtry$para.m, scale = F, center = T)
   dtCtry$para.z <- scale(dtCtry$para.m, scale = T)
-  dtCtry$para.fa <- fa(dtCtry %>% dplyr::select(starts_with("para"), -contains("DO")))$scores
+  dtCtry$para.fa <- fa(dtCtry %>% dplyr::select(para01, para02, para03))$scores
 
-# conspiracy
+# Conspiracy
+  dtCtry %>% dplyr::select(consp01, consp02, consp03) %>% psych::describe()
   dtCtry$consp.m <- scoreItems(keys=c(1,1,1),
-                                items = dtCtry %>% dplyr::select(starts_with("consp"), -contains("DO")) %>% na_if(., -99),
+                                items = dtCtry %>% dplyr::select(consp01, consp02, consp03) %>% na_if(., -99),
                                 min = 0, max = 10)$scores
   dtCtry$consp.c <- scale(dtCtry$consp.m, scale = F, center = T)
   dtCtry$consp.z <- scale(dtCtry$consp.m, scale = T)
-  dtCtry$consp.fa <- fa(dtCtry %>% dplyr::select(starts_with("consp"), -contains("DO")))$scores
+  dtCtry$consp.fa <- fa(dtCtry %>% dplyr::select(consp01, consp02, consp03))$scores
   
 # final step is grouping the data
   dtCtry <- dtCtry %>% 
     group_by(coded_country)
 ```
 
-# RMD12: Emotion and Compensation
+# Analysis
+## Confirmatory Factor Analysis
+### Simple Confirmatory Factor Analysis
 ```{r explrFactor12}
 model <- '# Model 
-            disemp  =~ fail01 + fail02 + fail03 
-            disc =~ disc01 + disc02 + disc03
-            PFS =~ PFS01 + PFS02 + PFS03
-            jbInsec =~ jbInsec01 + jbInsec02 + jbInsec03'
-fit <- sem(model, data = dtCtry)
+            disemp  =~ fail01 + fail02 + fail03
+            consp =~ consp01 + consp02 + consp03
+            para =~ para01 + para02 + para03
+          # Covariances
+            disemp ~~ consp
+            disemp ~~ para
+            consp ~~ para'
+fit <- cfa(model, data = dtCtry)
 summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
 ```
 
-# RMD20: Disempowerment Constructs
-## Analysis
+### MultiGroup Confirmatory Factor Analysis
 ```{r explrFactor}
-model <- '# Model 
-            disemp  =~ fail01 + fail02 + fail03 
-            disc =~ disc01 + disc02 + disc03
-            PFS =~ PFS01 + PFS02 + PFS03
-            jbInsec =~ jbInsec01 + jbInsec02 + jbInsec03'
-fit <- sem(model, data = dtCtry)
-summary(fit, fit.measures=TRUE)
-lavaanPlot::lavaanPlot(model = fit, coefs = T)
-
 # by country all
-  fitGroup <- sem(model, data = dtCtry, group = "coded_country")
+  fitGroup <- cfa(model, data = dtCtry, group = "coded_country")
   summary(fitGroup, fit.measures=TRUE)
-  lavaanPlot::lavaanPlot(model = fit, coefs = T)
-  
+
 # by country constrained
-  fitGroupConstr <- sem(model, dtCtry, group = "coded_country", group.equal = c("intercepts", "regressions"))
+  #fitGroupConstr <- sem(model, dtCtry, group = "coded_country", group.equal = c("intercepts", "regressions"))
   
 # compare unconstrained and constrained
-  anova(fitGroup, fitGroupConstr)
-```
-We are definitely observing a difference between the constrained and unconstrained model.
-
-```{r modelTest}
-model <- '# Model 
-            disemp  =~ fail01 + fail02 + fail03 
-            disc =~ disc01 + disc02 + disc03
-            proSo =~ disc01 + disc02 + disc03
-          # Regression
-            
-         '
-fit <- sem(model, data = dtCtry)
-summary(fit, fit.measures=TRUE)
-lavaanPlot::lavaanPlot(model = fit, coefs = T)
+  #anova(fitGroup, fitGroupConstr)
 ```
 
-# RMD31: Disempowerment, Paranoia, Conspiracy
-```{r ana31}
+## MultiLevel Approach
+### disemp - Conspiracy with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = disemp.m, y = consp.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(
+  tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8'
+)
+
+# fit model with fixed slope
+  mod1Fix <- lme4::lmer(consp.m ~ disemp.c + (1|coded_country), data = dtCtry)
+  summary(mod1Fix)
+```
+
+### disemp - Conspiracy with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = disemp.m, y = consp.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod1Rand <- lme4::lmer(consp.m ~ disemp.c + (1 + disemp.c|coded_country), data = dtCtry)
+  anova(mod1Fix, mod1Rand) # test diff
+  summary(mod1Rand)
+  lattice::dotplot(ranef(mod1Rand, postVar=TRUE))
+```
+
+### Paranoia - Conspiracy with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = para.m, y = consp.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8')
+
+# fit model with fixed slope
+  mod2Fix <- lme4::lmer(consp.m ~ para.c + (1|coded_country), data = dtCtry)
+  lattice::dotplot(ranef(mod2Fix, postVar=TRUE))
+  summary(mod2Fix)
+```
+
+### Paranoia - Conspiracy with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = para.m, y = consp.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod2Rand <- lme4::lmer(consp.m ~ para.c + (1 + para.c|coded_country), data = dtCtry)
+  anova(mod2Fix, mod2Rand) # test diff
+  summary(mod2Rand)
+  lattice::dotplot(ranef(mod2Rand, postVar=TRUE))
+  # sjPlot::plot_model(mod2Rand, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### disemp -Paranoia - Conspiracy with Fixed Slope
+```{r}
+# tmp <- ggplot(dtCtry, aes(x = disemp.m, y = consp.m)) +
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   theme_minimal()
+# 
+# ggExtra::ggMarginal(tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8')
+
+
+# fit model with random slope
+  mod3Fix <- lme4::lmer(consp.m ~ para.c + disemp.c + (1|coded_country), data = dtCtry)
+  summary(mod3Fix)
+  lattice::dotplot(ranef(mod3Fix, postVar=TRUE))
+  #sjPlot::plot_model(mod3Fix, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### disemp -Paranoia - Conspiracy with Random Slope
+```{r}
+# tmp <- ggplot(dtCtry, aes(x = para.m, y = consp.m, color = coded_country)) +
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   theme_minimal()
+# plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod3Rand <- lme4::lmer(consp.m ~ para.c + disemp.c + (1+ para.c + disemp.c |coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
+  summary(mod3Rand)
+  lattice::dotplot(ranef(mod3Rand, postVar=TRUE))
+  #sjPlot::plot_model(mod3Rand, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### Table: Multilevel Approach
+```{r}
+sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand)
+```
+
+
+## Multilevel Mediation
+### Simple SEM Model
+```{r}
 model <- '# Model 
-            disemp  =~ fail01 + fail02 + fail03 
+            disemp  =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            consp =~ happy + lifeSat + MLQ
             para =~ para01 + para02 + para03
-            consp =~ consp01 + consp02 + consp03
-          # Correlations
-            para ~~ disemp
-            consp ~~ disemp + para
-          '  
-fit <- sem(model, data = dtCtry)
-summary(fit, fit.measures=TRUE)
-lavaanPlot::lavaanPlot(model = fit, coefs = T)
-```
-
-
-```{r ana31}
-model <- '# Model 
-            disemp  =~ fail01 + fail02 + fail03 
-            para =~ para01 + para02 + para03
-            consp =~ consp01 + consp02 + consp03
           # Regression
-            para ~ disemp
-            consp ~ disemp + para
-          '  
+            para ~ a*disemp
+            consp ~ b*para + c*disemp'
 fit <- sem(model, data = dtCtry)
 summary(fit, fit.measures=TRUE)
-lavaanPlot::lavaanPlot(model = fit, coefs = T)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
 ```
 
-
-```{r ana31}
-
-modNull <- lme4::lmer(consp.m ~ 1 + (1|coded_country), data = dtCtry)
-summary(modNull)
-
-mod1Fix <- lme4::lmer(consp.m ~ disemp.z + (1|coded_country), data = dtCtry)
-summary(mod1Fix)
-
-mod1Rand <- lme4::lmer(consp.m ~ disemp.c + (1 + disemp.c|coded_country), data = dtCtry)
-anova(mod1Fix, mod1Rand)
-summary(mod1Rand)
-sjPlot::tab_model(mod1Rand, show.df = TRUE)
-
-sjPlot::plot_model(mod1Rand, type = c("diag"))
-sjPlot::plot_model(mod1Rand, type = c("est"), show.values = T)
-sjPlot::plot_model(mod1Rand, type = c("re"), show.values = T, value.offset = .5)
-
-mod2Fix <- lme4::lmer(consp.m ~ para.c + (1|coded_country), data = dtCtry)
-summary(mod2Fix)
-mod2Rand <- lme4::lmer(consp.m ~ para.c + (1 + para.c|coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
-sjPlot::plot_model(mod2Rand, type = c("re"), show.values = T, value.offset = .5)
-
-
-mod3Rand <- lme4::lmer(consp.m ~ disemp.c + para.c + (para.c + disemp.c|coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
-summary(mod3Rand)
-sjPlot::plot_model(mod2Rand, type = c("est"), show.values = T)
-sjPlot::plot_model(mod2Rand, type = c("re"), show.values = T, value.offset = .5)
-
-sjPlot::tab_model(mod1Rand, mod2Rand, mod3Rand, show.df = TRUE)
-
-
+### Multilevel SEM Model 1-1-1
+First we run a model that has no specified level 2 (only covariances)
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+# saturated model on level 2
+  model <- 'level:1
+            para.c ~ a*disemp.c
+            consp.m ~ b*para.c + c*disemp.c
+            level:2
+            para.c ~~ disemp.c
+            para.c ~~ consp.m
+            consp.m ~~ disemp.c
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
 ```
 
-Test longitudinal for wave 5
+Next we run a model that also has no level 2 specified (only intercepts)
+```{r}
+# level 2 only intercepts
+  model <- 'level:1
+            para.c ~ a*disemp.c
+            consp.m ~ b*para.c + c*disemp.c
+            level:2
+            para.c ~ 1
+            disemp.c ~1
+            consp.m ~ 1
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
 
+Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+```{r}
+# specified model
+model <- 'level:1
+          para.c ~ a*disemp.c
+          consp.m ~ b*para.c + c*disemp.c
+          level:2
+          para.c ~ d*disemp.c
+          consp.m ~ e*para.c + f*disemp.c
+          # Indirect and total effects within
+          ab:=a*b
+          totalwith:=ab+c 
+          # Indirect and total effects between
+          de:=d*e
+          totalbw:=de+f' 
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+lavInspect(fit, "icc")
+```
+
+##Test longitudinal

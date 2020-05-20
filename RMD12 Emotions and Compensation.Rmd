@@ -65,7 +65,7 @@ rm(dtRaw)
                                 min = 1, max = 5)$scores
   dtCtry$PE.c <- scale(dtCtry$PE.m, scale = F, center = T)
   dtCtry$PE.z <- scale(dtCtry$PE.m, scale = T)
-  dtCtry$PE.fa <- fa(dtCtry %>% dplyr::select(starts_with("fail"), -contains("DO")))$scores
+  dtCtry$PE.fa <- fa(dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel))$scores
 
 # Well-Being
   # need rescaling first
@@ -77,7 +77,7 @@ rm(dtRaw)
                                 min = 1, max = 10)$scores
   dtCtry$WB.c <- scale(dtCtry$WB.m, scale = F, center = T)
   dtCtry$WB.z <- scale(dtCtry$WB.m, scale = T)
-  dtCtry$WB.fa <- fa(dtCtry %>% dplyr::select(starts_with("WB"), -contains("DO")))$scores
+  dtCtry$WB.fa <- fa(dtCtry %>% dplyr::select(happy, lifeSat, MLQ))$scores
 
 # pro-Social Behavior
   dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe()
