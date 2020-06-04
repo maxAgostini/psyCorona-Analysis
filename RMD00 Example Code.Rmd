@@ -1,0 +1,348 @@
+---
+title: "PsyCorona Multilevel Code"
+author: "Maximilian Agostini"
+date: "May 2020"
+output:
+  html_document:
+    code_folding: hide
+    mathjax: default
+    theme: united
+    toc: yes
+    toc_float: yes
+    number_sections: TRUE
+  pdf_document:
+    toc: yes
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+cat("\014") # clear console
+rm(list=ls()) # clear workspace
+gc # garbage collector
+
+require(pacman)
+p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2)
+
+set.seed(52) # set overall random seed for reproducibility
+```
+
+# Load Data
+```{r LoadRawBase, echo=T, warning=F, message=F}
+
+# Import Data
+dtRaw <- haven::read_spss(dir("data/raw data", pattern = "Agostini", full.names = TRUE, ignore.case = TRUE))
+```
+
+# Prepare Data
+## Cleaning
+```{r clean, echo=T, warning=F, message=F}
+# change all -99 into NA
+  dtRaw[dtRaw == -99] <- NA
+
+# make relevant dfs
+dtFull <- dtRaw
+dtCtry <- dtRaw %>% 
+  group_by(coded_country) %>% # group by country
+  filter(n() > 200) # remove countries with less than 100 people
+dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
+  ungroup()
+rm(dtRaw)
+```
+
+
+## Calculate relevant variables
+### Make relevant vars numeric (lavaan)
+```{r makeNum, echo=F, warning=F, message=F}
+# make them numeric so lavaan stops complaining
+dtCtry <- dtCtry %>%
+  dplyr::mutate_at(vars(matches(
+    paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo", "para", "consp", "c19perBeh", "c19RCA"), 
+          collapse = "|"), -contains("DO"))), #vars changed
+    as.numeric) #function for change
+
+```
+
+### Scales
+```{r calcVars, echo=T, warning=F, message=F}
+# disempowerment
+  dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% psych::describe()
+  dtCtry$disemp.m <- scoreItems(keys=c(1,1,1),
+                            items = dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% na_if(., -99),
+                                min = -2, max = 2)$scores
+  dtCtry$disemp.c <- scale(dtCtry$disemp.m, scale = F, center = T)
+  dtCtry$disemp.z <- scale(dtCtry$disemp.m, scale = T)
+  dtCtry$disemp.fa <- fa(dtCtry %>% dplyr::select(fail01, fail02, fail03))$scores
+
+# Paranoia
+  dtCtry %>% dplyr::select(para01, para02, para03) %>% psych::describe()
+  dtCtry$para.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(para01, para02, para03) %>% na_if(., -99),
+                                min = 0, max = 10)$scores
+  dtCtry$para.c <- scale(dtCtry$para.m, scale = F, center = T)
+  dtCtry$para.z <- scale(dtCtry$para.m, scale = T)
+  dtCtry$para.fa <- fa(dtCtry %>% dplyr::select(para01, para02, para03))$scores
+
+# Conspiracy
+  dtCtry %>% dplyr::select(consp01, consp02, consp03) %>% psych::describe()
+  dtCtry$consp.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(consp01, consp02, consp03) %>% na_if(., -99),
+                                min = 0, max = 10)$scores
+  dtCtry$consp.c <- scale(dtCtry$consp.m, scale = F, center = T)
+  dtCtry$consp.z <- scale(dtCtry$consp.m, scale = T)
+  dtCtry$consp.fa <- fa(dtCtry %>% dplyr::select(consp01, consp02, consp03))$scores
+  
+# c19 Pro-Social Behavior
+  dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe()
+  dtCtry$c19ProSo.m <- scoreItems(keys=c(1,1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% na_if(., -99),
+                                min = -3, max = 3)$scores
+  dtCtry$c19ProSo.c <- scale(dtCtry$c19ProSo.m, scale = F, center = T)
+  dtCtry$c19ProSo.z <- scale(dtCtry$c19ProSo.m, scale = T)
+  dtCtry$c19ProSo.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores
+
+# c19 Self-Serving Behavior
+  dtCtry %>% dplyr::select(starts_with("c19perBeh"), -contains("DO")) %>% psych::describe()
+  dtCtry$c19perBeh.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("c19perBeh"), -contains("DO")) %>% na_if(., -99),
+                                min = -3, max = 3)$scores
+  dtCtry$c19perBeh.c <- scale(dtCtry$c19perBeh.m, scale = F, center = T)
+  dtCtry$c19perBeh.z <- scale(dtCtry$c19perBeh.m, scale = T)
+  dtCtry$c19perBeh.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19perBeh"), -contains("DO")))$scores
+
+# c19 Radical Behavior
+  dtCtry %>% dplyr::select(starts_with("c19RCA"), -contains("DO")) %>% psych::describe()
+  dtCtry$c19RCA.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("c19RCA"), -contains("DO")) %>% na_if(., -99),
+                                min = -3, max = 3)$scores
+  dtCtry$c19RCA.c <- scale(dtCtry$c19RCA.m, scale = F, center = T)
+  dtCtry$c19RCA.z <- scale(dtCtry$c19RCA.m, scale = T)
+  dtCtry$c19RCA.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19RCA"), -contains("DO")))$scores
+
+```
+
+# Analysis
+## Confirmatory Factor Analysis
+```{r}
+  model <- 'level:1
+            # Latent
+            disemp =~ fail01 + fail02 + fail03 
+            consp =~ consp01 + consp02 + consp03
+            para =~ para01 + para02 + para03
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+            RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+            level:2
+            disemp =~ fail01 + fail02 + fail03
+            consp =~ consp01 + consp02 + consp03
+            para =~ para01 + para02 + para03
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+            RCA =~ c19RCA01 + c19RCA02 + c19RCA03'
+#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+
+```
+
+## Multilevel SEM
+### Mean Center all relevant vars
+```{r}
+# mean center the individual scales (this works but want to be sure)
+  # dtCtry <- dtCtry %>%
+  #   dplyr::mutate_at(vars(matches(
+  #     paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
+  #     scale, center = T, scale = F) #function for change
+
+
+# mean center "save" way
+dtCtry <- dtCtry %>%
+    mutate(affCalm = scale(affCalm, center = T, scale = F),
+           affContent = scale(affContent, center = T, scale = F),
+           affEnerg = scale(affEnerg, center = T, scale = F),
+           affInsp = scale(affInsp, center = T, scale = F),
+           affRel = scale(affRel, center = T, scale = F),
+           affAnx = scale(affAnx, center = T, scale = F),
+           affDepr = scale(affDepr, center = T, scale = F),
+           affNerv = scale(affNerv, center = T, scale = F),
+           affExh = scale(affExh, center = T, scale = F),
+           PFS01 = scale(PFS01, center = T, scale = F),
+           PFS02 = scale(PFS02, center = T, scale = F),
+           PFS03 = scale(PFS03, center = T, scale = F),
+           fail01 = scale(fail01, center = T, scale = F),
+           fail02 = scale(fail02, center = T, scale = F),
+           fail03 = scale(fail03, center = T, scale = F),
+           happy = scale(happy, center = T, scale = F),
+           lifeSat = scale(lifeSat, center = T, scale = F),
+           MLQ = scale(MLQ, center = T, scale = F),
+           c19ProSo01 = scale(c19ProSo01, center = T, scale = F),
+           c19ProSo02 = scale(c19ProSo02, center = T, scale = F),
+           c19ProSo03 = scale(c19ProSo03, center = T, scale = F),
+           c19ProSo04 = scale(c19ProSo04, center = T, scale = F),
+           c19perBeh01 = scale(c19perBeh01, center = T, scale = F),
+           c19perBeh02 = scale(c19perBeh02, center = T, scale = F),
+           c19perBeh03 = scale(c19perBeh03, center = T, scale = F),
+           c19RCA01 = scale(c19RCA01, center = T, scale = F),
+           c19RCA02 = scale(c19RCA02, center = T, scale = F),
+           c19RCA03 = scale(c19RCA03, center = T, scale = F)
+           )
+```
+
+### Disemp - Consp - Pro-Sociality (Example for Multilevel SEM)
+```{r}
+  model <- 'level:1
+            # Latent
+            disemp =~ fail01 + fail02 + fail03 
+            consp =~ consp01 + consp02 + consp03
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            # Regression
+            consp ~ a1*disemp
+            proSo ~ b1*consp + c1*disemp
+            level:2
+            # Latent
+            disemp =~ fail01 + fail02 + fail03
+            consp =~ consp01 + consp02 + consp03
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            # Regression
+            consp ~ d1*disemp
+            proSo ~ e1*consp + f1*disemp
+            # Indirect and total effects within
+            ab:=a1*b1
+            totalwith:=ab+c1
+            # Indirect and total effects between
+            de:=d1*e1
+            totalbw:=de+f1'
+
+#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+## MultiLevel Regressions (Examples for Multilevel Analyses)
+### disemp - Conspiracy with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = disemp.m, y = consp.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(
+  tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8'
+)
+
+# fit model with fixed slope
+  mod1Fix <- lme4::lmer(consp.m ~ disemp.c + (1|coded_country), data = dtCtry)
+  summary(mod1Fix)
+```
+
+### disemp - Conspiracy with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = disemp.m, y = consp.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod1Rand <- lme4::lmer(consp.m ~ disemp.c + (1 + disemp.c|coded_country), data = dtCtry)
+  anova(mod1Fix, mod1Rand) # test diff
+  summary(mod1Rand)
+  lattice::dotplot(ranef(mod1Rand, postVar=TRUE))
+```
+
+### Table: Multilevel Approach
+```{r}
+sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand)
+```
+
+## Causal Mediation
+### Needs to be added
+```{r}
+# mediate package
+```
+
+# Back-Up Code
+## Multilevel SEM
+Here are some code snippets for different mocifications of multilevel SEM
+### Simple SEM Model
+```{r}
+model <- '# Model 
+            disemp  =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            consp =~ happy + lifeSat + MLQ
+            para =~ para01 + para02 + para03
+          # Regression
+            para ~ a*disemp
+            consp ~ b*para + c*disemp'
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+### Multilevel SEM Model 1-1-1
+First we run a model that has no specified level 2 (only covariances)
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+# saturated model on level 2
+  model <- 'level:1
+            para.c ~ a*disemp.c
+            consp.m ~ b*para.c + c*disemp.c
+            level:2
+            para.c ~~ disemp.c
+            para.c ~~ consp.m
+            consp.m ~~ disemp.c
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
+
+Next we run a model that also has no level 2 specified (only intercepts)
+```{r}
+# level 2 only intercepts
+  model <- 'level:1
+            para.c ~ a*disemp.c
+            consp.m ~ b*para.c + c*disemp.c
+            level:2
+            para.c ~ 1
+            disemp.c ~1
+            consp.m ~ 1
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
+
+Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+```{r}
+# specified model
+model <- 'level:1
+          para.c ~ a*disemp.c
+          consp.m ~ b*para.c + c*disemp.c
+          level:2
+          para.c ~ d*disemp.c
+          consp.m ~ e*para.c + f*disemp.c
+          # Indirect and total effects within
+          ab:=a*b
+          totalwith:=ab+c 
+          # Indirect and total effects between
+          de:=d*e
+          totalbw:=de+f' 
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+lavInspect(fit, "icc")
+```
+
+##Test longitudinal
