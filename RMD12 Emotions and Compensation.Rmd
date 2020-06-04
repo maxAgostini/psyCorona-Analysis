@@ -64,9 +64,7 @@ dtCtry <- dtCtry %>%
   dplyr::mutate_at(vars(matches(
     paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
     as.numeric) #function for change
-
 ```
-
 
 ### Scales
 ```{r calcVars, echo=T, warning=F, message=F}
@@ -126,10 +124,7 @@ dtCtry <- dtCtry %>%
   dtCtry$c19ProSo.c <- scale(dtCtry$c19ProSo.m, scale = F, center = T)
   dtCtry$c19ProSo.z <- scale(dtCtry$c19ProSo.m, scale = T)
   dtCtry$c19ProSo.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores
-#   
-# # final step is grouping the data
-#   dtCtry <- dtCtry %>% 
-#     group_by(coded_country)
+
 ```
 
 ### Interactions
@@ -299,7 +294,6 @@ plotly::ggplotly(tmp)
 ```{r}
 sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand)
 ```
-
 
 
 ## Multilevel Path Modeling
