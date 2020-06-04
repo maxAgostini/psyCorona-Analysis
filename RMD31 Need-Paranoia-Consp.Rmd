@@ -145,9 +145,9 @@ dtCtry <- dtCtry %>%
             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
             perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
             RCA =~ c19RCA01 + c19RCA02 + c19RCA03'
-#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
-fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
-           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+fit <- cfa(model, data = dtCtry, cluster = "coded_country")
+# fit <- cfa(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+#            em.fx.tol = 1e-08, em.dx.tol = 1e-04)
 summary(fit, fit.measures=TRUE)
 lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
 
@@ -326,44 +326,44 @@ lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
             totalbwProSo:=deProSo+f1
             totalbwRCA:=deRCA+f2'
 # all DVs (does not work)
-  model <- 'level:1
-            # Latent
-            disemp =~ fail01 + fail02 + fail03 
-            consp =~ consp01 + consp02 + consp03
-            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
-            perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
-            RCA =~ c19RCA01 + c19RCA02 + c19RCA03
-            # Regression
-            consp ~ a1*disemp
-            proSo ~ b1*consp + c1*disemp
-            perBeh ~ b2*consp + c2*disemp
-            RCA ~ b3*consp + c3*disemp
-            level:2
-            # Latent
-            disemp =~ fail01 + fail02 + fail03
-            consp =~ consp01 + consp02 + consp03
-            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
-            perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
-            RCA =~ c19RCA01 + c19RCA02 + c19RCA03
-            # Regression
-            consp ~ d1*disemp
-            proSo ~ e1*consp + f1*disemp
-            perBeh ~ e2*consp + f2*disemp
-            RCA ~ e3*consp + f3*disemp
-            # Indirect and total effects within
-            abProSo:=a1*b1
-            abperBeh:=a1*b2
-            abRCA:=a1*b3
-            totalwithProSo:=abProSo+c1
-            totalwithperBeh:=abperBeh+c2
-            totalwithRCA:=abRCA+c3
-            # Indirect and total effects between
-            deProSo:=d1*e1
-            deperBeh:=d1*e2
-            deRCA:=d1*e3
-            totalbwProSo:=deProSo+f1
-            totalbwperBeh:=deperBeh+f2
-            totalbwRCA:=deRCA+f3'
+  # model <- 'level:1
+  #           # Latent
+  #           disemp =~ fail01 + fail02 + fail03 
+  #           consp =~ consp01 + consp02 + consp03
+  #           proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+  #           perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+  #           RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+  #           # Regression
+  #           consp ~ a1*disemp
+  #           proSo ~ b1*consp + c1*disemp
+  #           perBeh ~ b2*consp + c2*disemp
+  #           RCA ~ b3*consp + c3*disemp
+  #           level:2
+  #           # Latent
+  #           disemp =~ fail01 + fail02 + fail03
+  #           consp =~ consp01 + consp02 + consp03
+  #           proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+  #           perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+  #           RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+  #           # Regression
+  #           consp ~ d1*disemp
+  #           proSo ~ e1*consp + f1*disemp
+  #           perBeh ~ e2*consp + f2*disemp
+  #           RCA ~ e3*consp + f3*disemp
+  #           # Indirect and total effects within
+  #           abProSo:=a1*b1
+  #           abperBeh:=a1*b2
+  #           abRCA:=a1*b3
+  #           totalwithProSo:=abProSo+c1
+  #           totalwithperBeh:=abperBeh+c2
+  #           totalwithRCA:=abRCA+c3
+  #           # Indirect and total effects between
+  #           deProSo:=d1*e1
+  #           deperBeh:=d1*e2
+  #           deRCA:=d1*e3
+  #           totalbwProSo:=deProSo+f1
+  #           totalbwperBeh:=deperBeh+f2
+  #           totalbwRCA:=deRCA+f3'
 
 fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
 # fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,

@@ -262,7 +262,7 @@ plotly::ggplotly(tmp)
 
 ### Table: Multilevel Approach
 ```{r}
-sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand)
+sjPlot::tab_model(mod1Fix, mod1Rand) # add as many as necessary :)
 ```
 
 ## Causal Mediation
