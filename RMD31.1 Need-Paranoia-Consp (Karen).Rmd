@@ -254,11 +254,8 @@ dtCtry <- dtCtry %>%
 ```
 
 ### Disemp - Consp - Pro-Sociality
-<<<<<<< HEAD:RMD31 Need-Consp-Beh.Rmd
 #### Stamdard Model
-=======
 #### No control
->>>>>>> 4ff471ac5981b51538a15df6b41b1dc9592d45cb:RMD31.1 Need-Paranoia-Consp (Karen).Rmd
 ```{r}
   model <- 'level:1
             # Latent
@@ -312,40 +309,6 @@ lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
             # Regression
             consp ~ d1*disemp + ctrl5*perBeh + ctrl6*RCA
             proSo ~ e1*consp + f1*disemp + ctrl7*perBeh + ctrl8*RCA
-            # Indirect and total effects within
-            ab:=a1*b1
-            totalwith:=ab+c1
-            # Indirect and total effects between
-            de:=d1*e1
-            totalbw:=de+f1'
-
-#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
-fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
-           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
-summary(fit, fit.measures=TRUE)
-lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
-```
-
-#### Control Paranoia
-```{r}
-  model <- 'level:1
-            # Latent
-            disemp =~ fail01 + fail02 + fail03 
-            consp =~ consp01 + consp02 + consp03
-            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
-            para =~ para01 + para02 + para03
-            # Regression
-            consp ~ a1*disemp + para
-            proSo ~ b1*consp + c1*disemp + para
-            level:2
-            # Latent
-            disemp =~ fail01 + fail02 + fail03
-            consp =~ consp01 + consp02 + consp03
-            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
-            para =~ para01 + para02 + para03
-            # Regression
-            consp ~ d1*disemp + para
-            proSo ~ e1*consp + f1*disemp + para
             # Indirect and total effects within
             ab:=a1*b1
             totalwith:=ab+c1
