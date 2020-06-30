@@ -127,6 +127,60 @@ dtCtry <- dtCtry %>%
 
 ```
 
+# Methods
+We collected a total of `r nrow(dtCtry)` from `r nrow(table(dtCtry$coded_country))` countries. We excluded 
+```{r}
+# number participants
+  nrow(dtCtry)
+# number countries
+  nrow(table(dtCtry$coded_country))
+# participants excluded
+  nrow(dtFull)-nrow(dtCtry)
+
+```
+
+### Mean Center all relevant vars
+```{r}
+# mean center the individual scales (this works but want to be sure)
+  # dtCtry <- dtCtry %>%
+  #   dplyr::mutate_at(vars(matches(
+  #     paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
+  #     scale, center = T, scale = F) #function for change
+
+
+# mean center "save" way
+dtCtry <- dtCtry %>%
+    mutate(affCalm = scale(affCalm, center = T, scale = F),
+           affContent = scale(affContent, center = T, scale = F),
+           affEnerg = scale(affEnerg, center = T, scale = F),
+           affInsp = scale(affInsp, center = T, scale = F),
+           affRel = scale(affRel, center = T, scale = F),
+           affAnx = scale(affAnx, center = T, scale = F),
+           affDepr = scale(affDepr, center = T, scale = F),
+           affNerv = scale(affNerv, center = T, scale = F),
+           affExh = scale(affExh, center = T, scale = F),
+           PFS01 = scale(PFS01, center = T, scale = F),
+           PFS02 = scale(PFS02, center = T, scale = F),
+           PFS03 = scale(PFS03, center = T, scale = F),
+           fail01 = scale(fail01, center = T, scale = F),
+           fail02 = scale(fail02, center = T, scale = F),
+           fail03 = scale(fail03, center = T, scale = F),
+           happy = scale(happy, center = T, scale = F),
+           lifeSat = scale(lifeSat, center = T, scale = F),
+           MLQ = scale(MLQ, center = T, scale = F),
+           c19ProSo01 = scale(c19ProSo01, center = T, scale = F),
+           c19ProSo02 = scale(c19ProSo02, center = T, scale = F),
+           c19ProSo03 = scale(c19ProSo03, center = T, scale = F),
+           c19ProSo04 = scale(c19ProSo04, center = T, scale = F),
+           c19perBeh01 = scale(c19perBeh01, center = T, scale = F),
+           c19perBeh02 = scale(c19perBeh02, center = T, scale = F),
+           c19perBeh03 = scale(c19perBeh03, center = T, scale = F),
+           c19RCA01 = scale(c19RCA01, center = T, scale = F),
+           c19RCA02 = scale(c19RCA02, center = T, scale = F),
+           c19RCA03 = scale(c19RCA03, center = T, scale = F)
+           )
+```
+
 # Analysis
 ## Confirmatory Factor Analysis
 ```{r}
@@ -196,7 +250,8 @@ dtCtry <- dtCtry %>%
            )
 ```
 
-### Disemp - Consp - Pro-Sociality 
+### Disemp - Consp - Pro-Sociality
+#### Stamdard Model
 ```{r}
   model <- 'level:1
             # Latent
@@ -214,6 +269,42 @@ dtCtry <- dtCtry %>%
             # Regression
             consp ~ d1*disemp
             proSo ~ e1*consp + f1*disemp
+            # Indirect and total effects within
+            ab:=a1*b1
+            totalwith:=ab+c1
+            # Indirect and total effects between
+            de:=d1*e1
+            totalbw:=de+f1'
+
+#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE, standardized = T)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+#### Control Model
+```{r}
+  model <- 'level:1
+            # Latent
+            disemp =~ fail01 + fail02 + fail03 
+            consp =~ consp01 + consp02 + consp03
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+            RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+            # Regression
+            consp ~ a1*disemp + ctrl1*perBeh + ctrl2*RCA
+            proSo ~ b1*consp + c1*disemp + ctrl3*perBeh + ctrl4*RCA
+            level:2
+            # Latent
+            disemp =~ fail01 + fail02 + fail03
+            consp =~ consp01 + consp02 + consp03
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+            RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+            # Regression
+            consp ~ d1*disemp + ctrl5*perBeh + ctrl6*RCA
+            proSo ~ e1*consp + f1*disemp + ctrl7*perBeh + ctrl8*RCA
             # Indirect and total effects within
             ab:=a1*b1
             totalwith:=ab+c1
@@ -325,45 +416,46 @@ lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
             deRCA:=d1*e2
             totalbwProSo:=deProSo+f1
             totalbwRCA:=deRCA+f2'
-# all DVs (does not work)
-  # model <- 'level:1
-  #           # Latent
-  #           disemp =~ fail01 + fail02 + fail03 
-  #           consp =~ consp01 + consp02 + consp03
-  #           proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
-  #           perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
-  #           RCA =~ c19RCA01 + c19RCA02 + c19RCA03
-  #           # Regression
-  #           consp ~ a1*disemp
-  #           proSo ~ b1*consp + c1*disemp
-  #           perBeh ~ b2*consp + c2*disemp
-  #           RCA ~ b3*consp + c3*disemp
-  #           level:2
-  #           # Latent
-  #           disemp =~ fail01 + fail02 + fail03
-  #           consp =~ consp01 + consp02 + consp03
-  #           proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
-  #           perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
-  #           RCA =~ c19RCA01 + c19RCA02 + c19RCA03
-  #           # Regression
-  #           consp ~ d1*disemp
-  #           proSo ~ e1*consp + f1*disemp
-  #           perBeh ~ e2*consp + f2*disemp
-  #           RCA ~ e3*consp + f3*disemp
-  #           # Indirect and total effects within
-  #           abProSo:=a1*b1
-  #           abperBeh:=a1*b2
-  #           abRCA:=a1*b3
-  #           totalwithProSo:=abProSo+c1
-  #           totalwithperBeh:=abperBeh+c2
-  #           totalwithRCA:=abRCA+c3
-  #           # Indirect and total effects between
-  #           deProSo:=d1*e1
-  #           deperBeh:=d1*e2
-  #           deRCA:=d1*e3
-  #           totalbwProSo:=deProSo+f1
-  #           totalbwperBeh:=deperBeh+f2
-  #           totalbwRCA:=deRCA+f3'
+
+# all DVs are predicted (does not work)
+model <- 'level:1
+          # Latent
+          disemp =~ fail01 + fail02 + fail03
+          consp =~ consp01 + consp02 + consp03
+          proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+          perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+          RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+          # Regression
+          consp ~ a1*disemp
+          proSo ~ b1*consp + c1*disemp
+          perBeh ~ b2*consp + c2*disemp
+          RCA ~ b3*consp + c3*disemp
+          level:2
+          # Latent
+          disemp =~ fail01 + fail02 + fail03
+          consp =~ consp01 + consp02 + consp03
+          proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+          perBeh =~ c19perBeh01 + c19perBeh02 + c19perBeh03
+          RCA =~ c19RCA01 + c19RCA02 + c19RCA03
+          # Regression
+          consp ~ d1*disemp
+          proSo ~ e1*consp + f1*disemp
+          perBeh ~ e2*consp + f2*disemp
+          RCA ~ e3*consp + f3*disemp
+          # Indirect and total effects within
+          abProSo:=a1*b1
+          abperBeh:=a1*b2
+          abRCA:=a1*b3
+          totalwithProSo:=abProSo+c1
+          totalwithperBeh:=abperBeh+c2
+          totalwithRCA:=abRCA+c3
+          # Indirect and total effects between
+          deProSo:=d1*e1
+          deperBeh:=d1*e2
+          deRCA:=d1*e3
+          totalbwProSo:=deProSo+f1
+          totalbwperBeh:=deperBeh+f2
+          totalbwRCA:=deRCA+f3'
 
 fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
 # fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
