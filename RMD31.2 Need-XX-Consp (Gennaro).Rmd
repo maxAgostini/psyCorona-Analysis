@@ -345,11 +345,11 @@ https://stats.stackexchange.com/questions/163436/r-moderated-mediation-using-the
   t$lowci = t$Estimate-1.96*t$Std..Error
   t; rm(t)
   
-  tmp <- interactions::sim_slopes(modRand1, pred = finThr.z, 
-             modx = disemp.z,
-             mod2 = para.z,
-             jnplot = TRUE) 
-  tmp
+  # tmp <- interactions::sim_slopes(modRand1, pred = finThr.z, 
+  #            modx = disemp.z,
+  #            mod2 = para.z,
+  #            jnplot = TRUE) 
+  # tmp
   
 
 ```
