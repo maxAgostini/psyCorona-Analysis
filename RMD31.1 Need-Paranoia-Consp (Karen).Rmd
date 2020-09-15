@@ -1,6 +1,6 @@
 ---
 title: "PsyCorona Need Threat to Compensation"
-author: "Maximilian Agostini, Anton Martinez"
+author: "Maximilian Agostini"
 date: "May 2020"
 output:
   html_document:
