@@ -1,0 +1,621 @@
+---
+title: "PsyCorona"
+author: "Maximilian Agostini"
+date: "May 2020"
+output:
+  html_document:
+    code_folding: hide
+    mathjax: default
+    theme: united
+    toc: yes
+    toc_float: yes
+    number_sections: TRUE
+  pdf_document:
+    toc: yes
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+cat("\014") # clear console
+rm(list=ls()) # clear workspace
+gc # garbage collector
+
+require(pacman)
+p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2)
+
+set.seed(52) # set overall random seed for reproducibility
+```
+
+# Load Data
+```{r LoadRawBase, echo=T, warning=F, message=F}
+
+# Import Data
+dtRaw <- haven::read_spss(dir("data/raw data", pattern = "Agostini", full.names = TRUE, ignore.case = TRUE))
+```
+
+# Prepare Data
+## Cleaning
+```{r clean, echo=T, warning=F, message=F}
+# change all -99 into NA
+  dtRaw[dtRaw == -99] <- NA
+
+# make relevant dfs
+dtFull <- dtRaw
+dtCtry <- dtRaw %>% 
+  group_by(coded_country) %>% # group by country
+  filter(n() > 200) # remove countries with less than 100 people
+dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
+  ungroup()
+rm(dtRaw)
+```
+
+## Calculate relevant variables
+### Make relevant vars numeric (lavaan)
+```{r makeNum, echo=F, warning=F, message=F}
+# make them numeric so lavaan stops complaining
+dtCtry <- dtCtry %>%
+  dplyr::mutate_at(vars(matches(
+    paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
+    as.numeric) #function for change
+```
+
+### Scales
+```{r calcVars, echo=T, warning=F, message=F}
+# positive emotion
+  dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% psych::describe()
+  dtCtry$posEmo.m <- scoreItems(keys=c(1,1,1,1,1),
+                            items = dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% na_if(., -99),
+                                min = 1, max = 5)$scores
+  dtCtry$posEmo.c <- scale(dtCtry$posEmo.m, scale = F, center = T)
+  dtCtry$posEmo.z <- scale(dtCtry$posEmo.m, scale = T)
+  dtCtry$posEmo.fa <- fa(dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel))$scores
+
+# negative emotion
+  dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% psych::describe()
+  dtCtry$negEmo.m <- scoreItems(keys=c(1,1,1,1),
+                            items = dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% na_if(., -99),
+                                min = 1, max = 5)$scores
+  dtCtry$negEmo.c <- scale(dtCtry$negEmo.m, scale = F, center = T)
+  dtCtry$negEmo.z <- scale(dtCtry$negEmo.m, scale = T)
+  dtCtry$negEmo.fa <- fa(dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh))$scores
+
+# financial strain
+  dtCtry %>% dplyr::select(PFS01, PFS02, PFS03) %>% psych::describe()
+  dtCtry$PFS.m <- scoreItems(keys=c(1,1,1),
+                            items = dtCtry %>% dplyr::select(PFS01, PFS02, PFS03) %>% na_if(., -99),
+                                min = -2, max = 2)$scores
+  dtCtry$PFS.c <- scale(dtCtry$PFS.m, scale = F, center = T)
+  dtCtry$PFS.z <- scale(dtCtry$PFS.m, scale = T)
+  dtCtry$PFS.fa <- fa(dtCtry %>% dplyr::select(PFS01, PFS02, PFS03))$scores
+  
+# disempowerment
+  dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% psych::describe()
+  dtCtry$disemp.m <- scoreItems(keys=c(1,1,1),
+                            items = dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% na_if(., -99),
+                                min = -2, max = 2)$scores
+  dtCtry$disemp.c <- scale(dtCtry$disemp.m, scale = F, center = T)
+  dtCtry$disemp.z <- scale(dtCtry$disemp.m, scale = T)
+  dtCtry$disemp.fa <- fa(dtCtry %>% dplyr::select(fail01, fail02, fail03))$scores
+
+# Well-Being
+  # need rescaling first
+    dtCtry$lifeSat <- scales::rescale(as.numeric(dtCtry$lifeSat), to = c(1,10))
+    dtCtry$MLQ <- scales::rescale(as.numeric(dtCtry$MLQ), to = c(1,10))
+  dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% psych::describe()
+  dtCtry$WB.m <- scoreItems(keys=c(1,1,1),
+                                items = dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% na_if(., -99),
+                                min = 1, max = 10)$scores
+  dtCtry$WB.c <- scale(dtCtry$WB.m, scale = F, center = T)
+  dtCtry$WB.z <- scale(dtCtry$WB.m, scale = T)
+  dtCtry$WB.fa <- fa(dtCtry %>% dplyr::select(happy, lifeSat, MLQ))$scores
+
+# pro-Social Behavior
+  dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe()
+  dtCtry$c19ProSo.m <- scoreItems(keys=c(1,1,1,1),
+                                items = dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% na_if(., -99),
+                                min = -3, max = 3)$scores
+  dtCtry$c19ProSo.c <- scale(dtCtry$c19ProSo.m, scale = F, center = T)
+  dtCtry$c19ProSo.z <- scale(dtCtry$c19ProSo.m, scale = T)
+  dtCtry$c19ProSo.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores
+
+```
+
+### Interactions
+```{r calcInt, echo=T, warning=F, message=F}
+# calculate interactions for observed modeling
+  dtCtry <- dtCtry %>%
+  mutate(intPosEmoXDisemp = posEmo.c*disemp.c,
+         intNegEmoXDisemp = negEmo.c*disemp.c,
+         intPFSXDisemp = PFS.c*disemp.c, scale = F, center = T)
+```
+
+
+# Analysis
+## Confirmatory Factor Analysis
+```{r explrFactor12}
+  model <- 'level:1
+            # Latent
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            PFS =~ PFS01 + PFS02 + PFS03
+            disemp =~ fail01 + fail02 + fail03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            level:2
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            disemp =~ fail01 + fail02 + fail03
+            PFS =~ PFS01 + PFS02 + PFS03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03'
+#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+<!-- ### MultiGroup Confirmatory Factor Analysis -->
+<!-- ```{r explrFactor} -->
+<!-- # by country all -->
+<!--   fitGroup <- cfa(model, data = dtCtry, group = "coded_country") -->
+<!--   summary(fitGroup, fit.measures=TRUE) -->
+
+<!-- # by country constrained -->
+<!--   #fitGroupConstr <- sem(model, dtCtry, group = "coded_country", group.equal = c("intercepts", "regressions")) -->
+
+<!-- # compare unconstrained and constrained -->
+<!--   #anova(fitGroup, fitGroupConstr) -->
+<!-- ``` -->
+
+## MultiLevel Approach
+### posEmo - Well-Being with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = posEmo.m, y = WB.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(
+  tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8'
+)
+
+# fit model with fixed slope
+  mod1Fix <- lme4::lmer(WB.m ~ posEmo.c + (1|coded_country), data = dtCtry)
+  summary(mod1Fix)
+```
+
+### posEmo - Well-Being with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = posEmo.m, y = WB.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod1Rand <- lme4::lmer(WB.m ~ posEmo.c + (1 + posEmo.c|coded_country), data = dtCtry)
+  anova(mod1Fix, mod1Rand) # test diff
+  summary(mod1Rand)
+  sjPlot::plot_model(mod1Rand, type = c("re"), show.values = T, value.offset = .5)
+
+```
+
+### Pro-Social - Well-Being with Fixed Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+
+ggExtra::ggMarginal(
+  tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8'
+)
+
+# fit model with fixed slope
+  mod2Fix <- lme4::lmer(WB.m ~ c19ProSo.c + (1|coded_country), data = dtCtry)
+  summary(mod2Fix)
+```
+
+### ProSo - Well-Being with Random Slope
+```{r}
+tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) +
+  geom_point()+
+  geom_smooth(method = 'lm')+
+  theme_minimal()
+plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod2Rand <- lme4::lmer(WB.m ~ c19ProSo.c + (1 + c19ProSo.c|coded_country), data = dtCtry)
+  anova(mod2Fix, mod2Rand) # test diff
+  summary(mod2Rand)
+  sjPlot::plot_model(mod2Rand, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### posEmo -ProSo - Well-Being with Fixed Slope
+```{r}
+# tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) +
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   theme_minimal()
+# plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod3Fix <- lme4::lmer(WB.m ~ c19ProSo.c + posEmo.c + (1|coded_country), data = dtCtry)
+  summary(mod3Fix)
+  sjPlot::plot_model(mod3Fix, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### posEmo -ProSo - Well-Being with Random Slope
+```{r}
+# tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) +
+#   geom_point()+
+#   geom_smooth(method = 'lm')+
+#   theme_minimal()
+# plotly::ggplotly(tmp)
+
+# fit model with random slope
+  mod3Rand <- lme4::lmer(WB.m ~ c19ProSo.c + posEmo.c + (1+ c19ProSo.c + posEmo.c |coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead"))
+  summary(mod3Rand)
+  sjPlot::plot_model(mod3Rand, type =  c("re"), show.values = T, value.offset = .5)
+```
+
+### DV: Well-Being full model
+```{r}
+# fit model with random slope
+  mod5Med <- lme4::lmer(WB.z ~ disemp.z*posEmo.z + disemp.z*negEmo.z + disemp.z*PFS.z + (1 |coded_country), data = dtCtry)
+  mod5DV <- lme4::lmer(c19ProSo.m ~ WB.z + disemp.z*posEmo.z + disemp.z*negEmo.z + disemp.z*PFS.z + (1 |coded_country), data = dtCtry)
+  summary(mod5Med)
+  summary(mod5DV)
+# mediation  
+  anaMed <- mediation::mediate(mod5Med, mod5DV, treat='negEmo.z', mediator='WB.z', sims = 100)
+  summary(anaMed)
+# test for moderated mediation
+  mediation::test.modmed(anaMed, list(disemp.z = -1), covariates.2 = list(disemp.z = 1), sims = 100)
+
+# test for values at different levels of moderator 
+  
+  
+  
+  lattice::dotplot(ranef(mod5Rand, postVar=TRUE))
+  
+  
+
+```
+
+### Table: Multilevel Approach
+```{r}
+sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand)
+```
+
+
+## Multilevel Path Modeling
+### CFA: Check latent constructs
+```{r}
+  model <- 'level:1
+            # Latent
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            PFS =~ PFS01 + PFS02 + PFS03
+            disemp =~ fail01 + fail02 + fail03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            level:2
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            disemp =~ fail01 + fail02 + fail03
+            PFS =~ PFS01 + PFS02 + PFS03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03'
+#fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+
+```
+
+### Well-Being as DV
+We run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+  model <- 'level:1
+            # a path
+            WB.m ~ a1*posEmo.c + a2*negEmo.c + a3*PFS.c + a4*disemp.c + a5*intPosEmoXDisemp + a6*intNegEmoXDisemp + a7*intPFSXDisemp
+            level:2
+            # d path
+            WB.m ~ d1*posEmo.c + d2*negEmo.c + d3*PFS.c + d4*disemp.c + d5*intPosEmoXDisemp + d6*intNegEmoXDisemp + d7*intPFSXDisemp'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+# fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+#            em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavInspect(fit, "icc")
+```
+
+### Pro-Sociality as DV
+We run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+  model <- 'level:1
+            # c path
+            c19ProSo.m ~ c1*posEmo.c + c2*negEmo.c + c3*PFS.c + c4*disemp.c + c5*intPosEmoXDisemp + c6*intNegEmoXDisemp + c7*intPFSXDisemp
+            # a path
+            WB.m ~ a1*posEmo.c + a2*negEmo.c + a3*PFS.c + a4*disemp.c + a5*intPosEmoXDisemp + a6*intNegEmoXDisemp + a7*intPFSXDisemp
+            # b path
+            c19ProSo.m ~ b1*WB.m
+            level:2
+            # f path
+            c19ProSo.m ~ f1*posEmo.c + f2*negEmo.c + f3*PFS.c + f4*disemp.c + f5*intPosEmoXDisemp + f6*intNegEmoXDisemp + f7*intPFSXDisemp
+            # d path
+            WB.m ~ d1*posEmo.c + d2*negEmo.c + d3*PFS.c + d4*disemp.c + d5*intPosEmoXDisemp + d6*intNegEmoXDisemp + d7*intPFSXDisemp
+            # e path
+            c19ProSo.m ~ e1*WB.m'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+# fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+#            em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavInspect(fit, "icc")
+```
+
+# OLD CODE: THIS IS REALLY COOL BUT DOES NOT WORK VERY WELL
+## Multilevel SEM
+### Mean Center all relevant vars
+```{r}
+# mean center the individual scales (this works but want to be sure)
+  # dtCtry <- dtCtry %>%
+  #   dplyr::mutate_at(vars(matches(
+  #     paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
+  #     scale, center = T, scale = F) #function for change
+
+
+# mean center "save" way
+dtCtry <- dtCtry %>%
+    mutate(affCalm = scale(affCalm, center = T, scale = F),
+           affContent = scale(affContent, center = T, scale = F),
+           affEnerg = scale(affEnerg, center = T, scale = F),
+           affInsp = scale(affInsp, center = T, scale = F),
+           affRel = scale(affRel, center = T, scale = F),
+           affAnx = scale(affAnx, center = T, scale = F),
+           affDepr = scale(affDepr, center = T, scale = F),
+           affNerv = scale(affNerv, center = T, scale = F),
+           affExh = scale(affExh, center = T, scale = F),
+           PFS01 = scale(PFS01, center = T, scale = F),
+           PFS02 = scale(PFS02, center = T, scale = F),
+           PFS03 = scale(PFS03, center = T, scale = F),
+           fail01 = scale(fail01, center = T, scale = F),
+           fail02 = scale(fail02, center = T, scale = F),
+           fail03 = scale(fail03, center = T, scale = F),
+           happy = scale(happy, center = T, scale = F),
+           lifeSat = scale(lifeSat, center = T, scale = F),
+           MLQ = scale(MLQ, center = T, scale = F),
+           c19ProSo01 = scale(c19ProSo01, center = T, scale = F),
+           c19ProSo02 = scale(c19ProSo02, center = T, scale = F),
+           c19ProSo03 = scale(c19ProSo03, center = T, scale = F),
+           c19ProSo04 = scale(c19ProSo04, center = T, scale = F),
+           )
+
+
+# calculate interactions for the latent constructs
+  dtCtry <- dtCtry %>%
+    mutate(fail01XposEmo01 = scale(fail01*affCalm, center = T, scale = F),
+           fail01XposEmo02 = scale(fail01*affContent, center = T, scale = F),
+           fail01XposEmo03 = scale(fail01*affEnerg, center = T, scale = F),
+           fail01XposEmo04 = scale(fail01*affInsp, center = T, scale = F),
+           fail01XposEmo05 = scale(fail01*affRel, center = T, scale = F),
+           fail02XposEmo01 = scale(fail02*affCalm, center = T, scale = F),
+           fail02XposEmo02 = scale(fail02*affContent, center = T, scale = F),
+           fail02XposEmo03 = scale(fail02*affEnerg, center = T, scale = F),
+           fail02XposEmo04 = scale(fail02*affInsp, center = T, scale = F),
+           fail02XposEmo05 = scale(fail02*affRel, center = T, scale = F),
+           fail03XposEmo01 = scale(fail03*affCalm, center = T, scale = F),
+           fail03XposEmo02 = scale(fail03*affContent, center = T, scale = F),
+           fail03XposEmo03 = scale(fail03*affEnerg, center = T, scale = F),
+           fail03XposEmo04 = scale(fail03*affInsp, center = T, scale = F),
+           fail03XposEmo05 = scale(fail03*affRel, center = T, scale = F)
+           )
+
+  # calculate interactions for the latent constructs
+  dtCtry <- dtCtry %>%
+    mutate(fail01XposEmo01 = fail01*affCalm,
+           fail01XposEmo02 = fail01*affContent,
+           fail01XposEmo03 = fail01*affEnerg,
+           fail01XposEmo04 = fail01*affInsp,
+           fail01XposEmo05 = fail01*affRel,
+           fail02XposEmo01 = fail02*affCalm,
+           fail02XposEmo02 = fail02*affContent,
+           fail02XposEmo03 = fail02*affEnerg,
+           fail02XposEmo04 = fail02*affInsp,
+           fail02XposEmo05 = fail02*affRel,
+           fail03XposEmo01 = fail03*affCalm,
+           fail03XposEmo02 = fail03*affContent,
+           fail03XposEmo03 = fail03*affEnerg,
+           fail03XposEmo04 = fail03*affInsp,
+           fail03XposEmo05 = fail03*affRel
+           )
+```
+
+
+### posEmo - WB - proSo 
+#### Normal SEM
+```{r}
+model <- '# Model 
+            posEmo  =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            WB =~ happy + lifeSat + MLQ
+            c19ProSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 + c19ProSo04
+          # Regression
+            c19ProSo ~ a*posEmo
+            WB ~ b*c19ProSo + c*posEmo'
+fit <- sem(model, data = dtCtry)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+
+
+```
+
+#### Multilevel SEM Model 1-1-1
+First we run a model that has no specified level 2 (only covariances)
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+# saturated model on level 2
+  model <- 'level:1
+            c19ProSo.c ~ a*posEmo.c
+            WB.m ~ b*c19ProSo.c + c*posEmo.c
+            level:2
+            c19ProSo.c ~~ posEmo.c
+            c19ProSo.c ~~ WB.m
+            WB.m ~~ posEmo.c
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
+
+Next we run a model that also has no level 2 specified (only intercepts)
+```{r}
+# level 2 only intercepts
+  model <- 'level:1
+            c19ProSo.c ~ a*posEmo.c
+            WB.m ~ b*c19ProSo.c + c*posEmo.c
+            level:2
+            c19ProSo.c ~ 1
+            posEmo.c ~1
+            WB.m ~ 1
+            # Indirect effects
+            ab:=a*b
+            total:=ab+c'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+```
+
+Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+```{r}
+# specified model
+model <- 'level:1
+          c19ProSo.c ~ a*posEmo.c
+          WB.m ~ b*c19ProSo.c + c*posEmo.c
+          level:2
+          c19ProSo.c ~ d*posEmo.c
+          WB.m ~ e*c19ProSo.c + f*posEmo.c
+          # Indirect and total effects within
+          ab:=a*b
+          totalwith:=ab+c 
+          # Indirect and total effects between
+          de:=d*e
+          totalbw:=de+f' 
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+summary(fit, fit.measures=TRUE)
+lavInspect(fit, "icc")
+```
+
+### predictors - WB  
+#### Multilevel SEM (latent vars)
+##### First: Measurement model
+We run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
+In this first step, we test the measurement model to see whether the constructs even fit. Fit indeces seem adequate.
+```{r}
+# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
+# By adding the same model again on level 2, we are estimating the latent means now
+  model <- 'level:1
+            # Latent
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            PFS =~ PFS01 + PFS02 + PFS03
+            disemp =~ fail01 + fail02 + fail03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            level:2
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            disemp =~ fail01 + fail02 + fail03
+            PFS =~ PFS01 + PFS02 + PFS03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03'
+fit <- sem(model, data = dtCtry, cluster = "coded_country")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+
+```
+
+##### Second: Regression Model
+```{r}
+  model <- 'level:1
+          # Latent IVs
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            PFS =~ PFS01 + PFS02 + PFS03
+            disemp =~ fail01 + fail02 + fail03
+          # Latent Mediator
+            wellBe =~ happy + lifeSat + MLQ
+          # Latent DV
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+          # Regression
+            wellBe ~ a1*posEmo + a2*negEmo + a3*PFS + a4*disemp
+            level:2
+          # Latent
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            disemp =~ fail01 + fail02 + fail03
+            PFS =~ PFS01 + PFS02 + PFS03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+          # Regression
+            wellBe ~ d1*posEmo + d2*negEmo + d3*PFS + d4*disemp'
+#fit <- sem(model, data = dtCtry, cluster = "coded_country")
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
+
+##### Third: Interaction Model
+```{r}
+  model <- 'level:1
+          # Latent Constructs
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel 
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            PFS =~ PFS01 + PFS02 + PFS03
+            disemp =~ fail01 + fail02 + fail03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+          # Interactions
+            failXposEmo =~ fail01XposEmo01 + fail01XposEmo02 + fail01XposEmo03 + fail01XposEmo04 + fail01XposEmo05 + fail02XposEmo01 + fail02XposEmo02 + fail02XposEmo03 + fail02XposEmo04 + fail02XposEmo05 + fail03XposEmo01 + fail03XposEmo02 + fail03XposEmo03 + fail03XposEmo04 + fail03XposEmo05
+          # Regression
+            wellBe ~ a1*posEmo + a2*negEmo + a3*PFS + a4*disemp + a5*failXposEmo
+            level:2
+          # Latent Constructs
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            disemp =~ fail01 + fail02 + fail03
+            PFS =~ PFS01 + PFS02 + PFS03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+          # Interactions
+            failXposEmo =~ fail01XposEmo01 + fail01XposEmo02 + fail01XposEmo03 + fail01XposEmo04 + fail01XposEmo05 + fail02XposEmo01 + fail02XposEmo02 + fail02XposEmo03 + fail02XposEmo04 + fail02XposEmo05 + fail03XposEmo01 + fail03XposEmo02 + fail03XposEmo03 + fail03XposEmo04 + fail03XposEmo05
+          # Regression
+            wellBe ~ d1*posEmo + d2*negEmo + d3*PFS + d4*disemp + d6*failXposEmo'
+
+fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+ lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+ 
+# semTools::plotProbe (probe a latent interaction) https://rdrr.io/cran/semTools/man/plotProbe.html
+ 
+```
+
+## Longitudinal
+```{r}
+
+# use growth() from lavaan package with cluster
+```
+
