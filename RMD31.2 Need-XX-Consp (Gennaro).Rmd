@@ -345,11 +345,11 @@ https://stats.stackexchange.com/questions/163436/r-moderated-mediation-using-the
   t$lowci = t$Estimate-1.96*t$Std..Error
   t; rm(t)
   
-  tmp <- interactions::sim_slopes(modRand1, pred = finThr.z, 
-             modx = disemp.z,
-             mod2 = para.z,
-             jnplot = TRUE) 
-  tmp
+  # tmp <- interactions::sim_slopes(modRand1, pred = finThr.z, 
+  #            modx = disemp.z,
+  #            mod2 = para.z,
+  #            jnplot = TRUE) 
+  # tmp
   
 
 ```
@@ -357,77 +357,77 @@ https://stats.stackexchange.com/questions/163436/r-moderated-mediation-using-the
 
 
 
-# OLD CODE
-## Multilevel Mediation
-### Simple SEM Model
-```{r}
-model <- '# Model 
-            disemp  =~ affCalm + affContent + affEnerg + affInsp + affRel 
-            consp =~ happy + lifeSat + MLQ
-            para =~ para01 + para02 + para03
-          # Regression
-            para ~ a*disemp
-            consp ~ b*para + c*disemp'
-fit <- sem(model, data = dtCtry)
-summary(fit, fit.measures=TRUE)
-lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
-```
+<!-- # OLD CODE -->
+<!-- ## Multilevel Mediation -->
+<!-- ### Simple SEM Model -->
+<!-- ```{r} -->
+<!-- model <- '# Model  -->
+<!--             disemp  =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
+<!--             consp =~ happy + lifeSat + MLQ -->
+<!--             para =~ para01 + para02 + para03 -->
+<!--           # Regression -->
+<!--             para ~ a*disemp -->
+<!--             consp ~ b*para + c*disemp' -->
+<!-- fit <- sem(model, data = dtCtry) -->
+<!-- summary(fit, fit.measures=TRUE) -->
+<!-- lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
+<!-- ``` -->
 
-### Multilevel SEM Model 1-1-1
-First we run a model that has no specified level 2 (only covariances)
-```{r}
-# Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY):
-# By adding the same model again on level 2, we are estimating the latent means now
-# saturated model on level 2
-  model <- 'level:1
-            para.c ~ a*disemp.c
-            consp.m ~ b*para.c + c*disemp.c
-            level:2
-            para.c ~~ disemp.c
-            para.c ~~ consp.m
-            consp.m ~~ disemp.c
-            # Indirect effects
-            ab:=a*b
-            total:=ab+c'
-fit <- sem(model, data = dtCtry, cluster = "coded_country")
-summary(fit, fit.measures=TRUE)
-```
+<!-- ### Multilevel SEM Model 1-1-1 -->
+<!-- First we run a model that has no specified level 2 (only covariances) -->
+<!-- ```{r} -->
+<!-- # Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY): -->
+<!-- # By adding the same model again on level 2, we are estimating the latent means now -->
+<!-- # saturated model on level 2 -->
+<!--   model <- 'level:1 -->
+<!--             para.c ~ a*disemp.c -->
+<!--             consp.m ~ b*para.c + c*disemp.c -->
+<!--             level:2 -->
+<!--             para.c ~~ disemp.c -->
+<!--             para.c ~~ consp.m -->
+<!--             consp.m ~~ disemp.c -->
+<!--             # Indirect effects -->
+<!--             ab:=a*b -->
+<!--             total:=ab+c' -->
+<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
+<!-- summary(fit, fit.measures=TRUE) -->
+<!-- ``` -->
 
-Next we run a model that also has no level 2 specified (only intercepts)
-```{r}
-# level 2 only intercepts
-  model <- 'level:1
-            para.c ~ a*disemp.c
-            consp.m ~ b*para.c + c*disemp.c
-            level:2
-            para.c ~ 1
-            disemp.c ~1
-            consp.m ~ 1
-            # Indirect effects
-            ab:=a*b
-            total:=ab+c'
-fit <- sem(model, data = dtCtry, cluster = "coded_country")
-summary(fit, fit.measures=TRUE)
-```
+<!-- Next we run a model that also has no level 2 specified (only intercepts) -->
+<!-- ```{r} -->
+<!-- # level 2 only intercepts -->
+<!--   model <- 'level:1 -->
+<!--             para.c ~ a*disemp.c -->
+<!--             consp.m ~ b*para.c + c*disemp.c -->
+<!--             level:2 -->
+<!--             para.c ~ 1 -->
+<!--             disemp.c ~1 -->
+<!--             consp.m ~ 1 -->
+<!--             # Indirect effects -->
+<!--             ab:=a*b -->
+<!--             total:=ab+c' -->
+<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
+<!-- summary(fit, fit.measures=TRUE) -->
+<!-- ``` -->
 
-Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values.
-```{r}
-# specified model
-model <- 'level:1
-          para.c ~ a*disemp.c
-          consp.m ~ b*para.c + c*disemp.c
-          level:2
-          para.c ~ d*disemp.c
-          consp.m ~ e*para.c + f*disemp.c
-          # Indirect and total effects within
-          ab:=a*b
-          totalwith:=ab+c 
-          # Indirect and total effects between
-          de:=d*e
-          totalbw:=de+f' 
-fit <- sem(model, data = dtCtry, cluster = "coded_country")
-summary(fit, fit.measures=TRUE)
-lavInspect(fit, "icc")
-```
+<!-- Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values. -->
+<!-- ```{r} -->
+<!-- # specified model -->
+<!-- model <- 'level:1 -->
+<!--           para.c ~ a*disemp.c -->
+<!--           consp.m ~ b*para.c + c*disemp.c -->
+<!--           level:2 -->
+<!--           para.c ~ d*disemp.c -->
+<!--           consp.m ~ e*para.c + f*disemp.c -->
+<!--           # Indirect and total effects within -->
+<!--           ab:=a*b -->
+<!--           totalwith:=ab+c  -->
+<!--           # Indirect and total effects between -->
+<!--           de:=d*e -->
+<!--           totalbw:=de+f'  -->
+<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
+<!-- summary(fit, fit.measures=TRUE) -->
+<!-- lavInspect(fit, "icc") -->
+<!-- ``` -->
 
-##Test longitudinal
+<!-- ##Test longitudinal -->
