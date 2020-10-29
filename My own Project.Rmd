@@ -28,7 +28,7 @@ rm(list=ls()) # clear workspace
 gc # garbage collector
 
 require(pacman)
-p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2)
+p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2, MplusAutomation)
 
 set.seed(52) # set overall random seed for reproducibility
 ```
@@ -70,60 +70,60 @@ dtCtry <- dtCtry %>%
 ```{r calcVars, echo=T, warning=F, message=F}
 # positive emotion
   dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% psych::describe()
-  dtCtry$posEmo.m <- scoreItems(keys=c(1,1,1,1,1),
+  dtCtry$posEmo.m <- as.numeric(scoreItems(keys=c(1,1,1,1,1), # as.numeric is needed for Mplus later (does only take one-dimensional objects)
                             items = dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% na_if(., -99),
-                                min = 1, max = 5)$scores
-  dtCtry$posEmo.c <- scale(dtCtry$posEmo.m, scale = F, center = T)
-  dtCtry$posEmo.z <- scale(dtCtry$posEmo.m, scale = T)
-  dtCtry$posEmo.fa <- fa(dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel))$scores
+                                min = 1, max = 5)$scores)
+  dtCtry$posEmo.c <- as.numeric(scale(dtCtry$posEmo.m, scale = F, center = T))
+  dtCtry$posEmo.z <- as.numeric(scale(dtCtry$posEmo.m, scale = T))
+  dtCtry$posEmo.fa <- as.numeric(fa(dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel))$scores)
 
 # negative emotion
   dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% psych::describe()
-  dtCtry$negEmo.m <- scoreItems(keys=c(1,1,1,1),
+  dtCtry$negEmo.m <- as.numeric(scoreItems(keys=c(1,1,1,1),
                             items = dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% na_if(., -99),
-                                min = 1, max = 5)$scores
-  dtCtry$negEmo.c <- scale(dtCtry$negEmo.m, scale = F, center = T)
-  dtCtry$negEmo.z <- scale(dtCtry$negEmo.m, scale = T)
-  dtCtry$negEmo.fa <- fa(dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh))$scores
+                                min = 1, max = 5)$scores)
+  dtCtry$negEmo.c <- as.numeric(scale(dtCtry$negEmo.m, scale = F, center = T))
+  dtCtry$negEmo.z <- as.numeric(scale(dtCtry$negEmo.m, scale = T))
+  dtCtry$negEmo.fa <- as.numeric(fa(dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh))$scores)
 
 # financial strain
   dtCtry %>% dplyr::select(PFS01, PFS02, PFS03) %>% psych::describe()
-  dtCtry$PFS.m <- scoreItems(keys=c(1,1,1),
+  dtCtry$PFS.m <- as.numeric(scoreItems(keys=c(1,1,1),
                             items = dtCtry %>% dplyr::select(PFS01, PFS02, PFS03) %>% na_if(., -99),
-                                min = -2, max = 2)$scores
-  dtCtry$PFS.c <- scale(dtCtry$PFS.m, scale = F, center = T)
-  dtCtry$PFS.z <- scale(dtCtry$PFS.m, scale = T)
-  dtCtry$PFS.fa <- fa(dtCtry %>% dplyr::select(PFS01, PFS02, PFS03))$scores
+                                min = -2, max = 2)$scores)
+  dtCtry$PFS.c <- as.numeric(scale(dtCtry$PFS.m, scale = F, center = T))
+  dtCtry$PFS.z <- as.numeric(scale(dtCtry$PFS.m, scale = T))
+  dtCtry$PFS.fa <- as.numeric(fa(dtCtry %>% dplyr::select(PFS01, PFS02, PFS03))$scores)
   
 # disempowerment
   dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% psych::describe()
-  dtCtry$disemp.m <- scoreItems(keys=c(1,1,1),
+  dtCtry$disemp.m <- as.numeric(scoreItems(keys=c(1,1,1),
                             items = dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% na_if(., -99),
-                                min = -2, max = 2)$scores
-  dtCtry$disemp.c <- scale(dtCtry$disemp.m, scale = F, center = T)
-  dtCtry$disemp.z <- scale(dtCtry$disemp.m, scale = T)
-  dtCtry$disemp.fa <- fa(dtCtry %>% dplyr::select(fail01, fail02, fail03))$scores
+                                min = -2, max = 2)$scores)
+  dtCtry$disemp.c <- as.numeric(scale(dtCtry$disemp.m, scale = F, center = T))
+  dtCtry$disemp.z <- as.numeric(scale(dtCtry$disemp.m, scale = T))
+  dtCtry$disemp.fa <- as.numeric(fa(dtCtry %>% dplyr::select(fail01, fail02, fail03))$scores)
 
 # Well-Being
   # need rescaling first
     dtCtry$lifeSat <- scales::rescale(as.numeric(dtCtry$lifeSat), to = c(1,10))
     dtCtry$MLQ <- scales::rescale(as.numeric(dtCtry$MLQ), to = c(1,10))
   dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% psych::describe()
-  dtCtry$WB.m <- scoreItems(keys=c(1,1,1),
+  dtCtry$WB.m <- as.numeric(scoreItems(keys=c(1,1,1),
                                 items = dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% na_if(., -99),
-                                min = 1, max = 10)$scores
-  dtCtry$WB.c <- scale(dtCtry$WB.m, scale = F, center = T)
-  dtCtry$WB.z <- scale(dtCtry$WB.m, scale = T)
-  dtCtry$WB.fa <- fa(dtCtry %>% dplyr::select(happy, lifeSat, MLQ))$scores
+                                min = 1, max = 10)$scores)
+  dtCtry$WB.c <- as.numeric(scale(dtCtry$WB.m, scale = F, center = T))
+  dtCtry$WB.z <- as.numeric(scale(dtCtry$WB.m, scale = T))
+  dtCtry$WB.fa <- as.numeric(fa(dtCtry %>% dplyr::select(happy, lifeSat, MLQ))$scores)
 
 # pro-Social Behavior
   dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe()
-  dtCtry$c19ProSo.m <- scoreItems(keys=c(1,1,1,1),
+  dtCtry$c19ProSo.m <- as.numeric(as.numeric(scoreItems(keys=c(1,1,1,1),
                                 items = dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% na_if(., -99),
-                                min = -3, max = 3)$scores
-  dtCtry$c19ProSo.c <- scale(dtCtry$c19ProSo.m, scale = F, center = T)
-  dtCtry$c19ProSo.z <- scale(dtCtry$c19ProSo.m, scale = T)
-  dtCtry$c19ProSo.fa <- fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores
+                                min = -3, max = 3)$scores))
+  dtCtry$c19ProSo.c <- as.numeric(scale(dtCtry$c19ProSo.m, scale = F, center = T))
+  dtCtry$c19ProSo.z <- as.numeric(scale(dtCtry$c19ProSo.m, scale = T))
+  dtCtry$c19ProSo.fa <- as.numeric(fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores)
 
 ```
 
@@ -138,6 +138,19 @@ dtCtry <- dtCtry %>%
 
 
 # Analysis
+## MPlus Preparation
+```{r}
+ dtOut <- dtCtry %>%
+  select(contains("c19ProSo"))
+
+  prepareMplusData(dtOut[, 1:ncol(dtOut)], 
+                   "test.dat")
+
+
+```
+
+
+
 ## Confirmatory Factor Analysis
 ```{r explrFactor12}
   model <- 'level:1
