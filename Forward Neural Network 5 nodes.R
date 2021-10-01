@@ -41,10 +41,10 @@ dtRaw[dtRaw == -99] <- NA
   rm(tmp)
 
 # training data
-  train_data <- list(X = dt[1:(nrow(dt)*3/5),1:5],
-                     Y = dt[1:(nrow(dt)*3/5),6] )
-  test_data <- list(X = dt[((nrow(dt)*3/5)+1):nrow(dt),1:5],
-                    Y = dt[((nrow(dt)*3/5)+1):nrow(dt),6])
+  train_data <- list(X = dt[1:(nrow(dt)*4/5),1:5],
+                     Y = dt[1:(nrow(dt)*4/5),6] )
+  test_data <- list(X = dt[((nrow(dt)*4/5)+1):nrow(dt),1:5],
+                    Y = dt[((nrow(dt)*4/5)+1):nrow(dt),6])
 
 ##########################################################
 ## Single-layer FNN
