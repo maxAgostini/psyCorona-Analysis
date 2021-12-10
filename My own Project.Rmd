@@ -28,16 +28,15 @@ rm(list=ls()) # clear workspace
 gc # garbage collector
 
 require(pacman)
-p_load(metafor, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2, MplusAutomation)
+p_load(metafor, tidyr, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, metaSEM, lavaan, semPlot, psych, ggplot2, MplusAutomation, bmlm)
 
 set.seed(52) # set overall random seed for reproducibility
 ```
 
 # Load Data
 ```{r LoadRawBase, echo=T, warning=F, message=F}
-
 # Import Data
-dtRaw <- haven::read_spss(dir("data/raw data", pattern = "Agostini", full.names = TRUE, ignore.case = TRUE))
+dtRaw <- haven::read_spss(dir("data", pattern = "Agostini", full.names = TRUE, ignore.case = TRUE))
 ```
 
 # Prepare Data
@@ -46,27 +45,30 @@ dtRaw <- haven::read_spss(dir("data/raw data", pattern = "Agostini", full.names 
 # change all -99 into NA
   dtRaw[dtRaw == -99] <- NA
 
+# add running number as pp
+  dtRaw$PPID <- c(1:nrow(dtRaw))
+
 # make relevant dfs
 dtFull <- dtRaw
+
+# make relevant vars numeric
+dtFull <- dtFull %>%
+  dplyr::mutate_at(vars(matches(
+    paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
+    as.numeric) #function for change
+
+# create between subjects baseline df
 dtCtry <- dtRaw %>% 
   group_by(coded_country) %>% # group by country
-  filter(n() > 200) # remove countries with less than 100 people
+  filter(n() > 100) # remove countries with less than 100 people
 dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
   ungroup()
 rm(dtRaw)
 ```
 
 ## Calculate relevant variables
-### Make relevant vars numeric (lavaan)
-```{r makeNum, echo=F, warning=F, message=F}
-# make them numeric so lavaan stops complaining
-dtCtry <- dtCtry %>%
-  dplyr::mutate_at(vars(matches(
-    paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed
-    as.numeric) #function for change
-```
-
-### Scales
+### Baseline
+#### Scales
 ```{r calcVars, echo=T, warning=F, message=F}
 # positive emotion
   dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% psych::describe()
@@ -127,13 +129,61 @@ dtCtry <- dtCtry %>%
 
 ```
 
-### Interactions
+#### Interactions
 ```{r calcInt, echo=T, warning=F, message=F}
 # calculate interactions for observed modeling
   dtCtry <- dtCtry %>%
   mutate(intPosEmoXDisemp = posEmo.c*disemp.c,
          intNegEmoXDisemp = negEmo.c*disemp.c,
          intPFSXDisemp = PFS.c*disemp.c, scale = F, center = T)
+```
+
+### Within Participant
+#### wide to long
+```{r}
+# select relevant vars
+tmp <- dtFull %>%
+  dplyr::transmute_at(vars(matches(
+    paste(c("affAnx", "affCalm", "affDepr", "affEnerg", "affNerv", "affInsp", "affRel",
+            "affExh", "PFS01", "happy", "lifeSat", "fail01", "c19ProSo01", "c19ProSo03"), collapse = "|"), -contains("DO"))), #vars changed
+    as.numeric)
+tmp$PPID <- dtFull$PPID
+tmp <- data.table::data.table(tmp)
+
+library(data.table)
+dtLong <- data.table::melt.data.table(
+  data = tmp, 
+  id.vars = "PPID",
+  measure.vars = patterns( # cannot access patterns directly! need to load library!!!
+    affAnx = "affAnx",
+    affCalm = "affCalm",
+    affDepr = "affDepr",
+    affEnerg = "affEnerg",
+    affNerv = "affNerv",
+    affInsp = "affInsp",
+    affRel = "affRel",
+    affExh = "affExh",
+    PFS01 = "PFS01",
+    happy = "happy",
+    lifeSat = "lifeSat",
+    fail01 = "fail01", 
+    c19ProSo01 = "c19ProSo01",
+    c19ProSo03 = "c19ProSo03")
+  )
+
+
+```
+
+#### create centered variables
+```{r}
+dtLong
+
+d <- BLch9
+
+
+dtLong <- bmlm::isolate(tmp1, by = "id",
+             value = c("fwkstrs", "fwkdis"),
+             which = "both")
 ```
 
 
