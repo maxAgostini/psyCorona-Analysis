@@ -418,18 +418,27 @@ dtLong <- dtLong %>%
   )
 ```
 
-
 # Analysis Longitudinal
+http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only)
 ```{r}
-ana <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + 
-                    (1|coded_country) + 
-                    (1|coded_country:PPID), 
+ana.0 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + 
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
 
-summary(ana)
+summary(ana.0)
 performance::icc(ana)
 ```
 
+```{r}
+ana.1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + 
+                    (1|coded_country) + 
+                    (1+ PFS_cw|coded_country:PPID), # we can let slopes vary per participant (or by country if added in the line above)
+                  data = dtLong)
+
+summary(ana.1)
+performance::icc(ana)
+```
 
 # Analysis Baseline
 ## MPlus Preparation
