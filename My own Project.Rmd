@@ -66,6 +66,31 @@ dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
 rm(dtRaw)
 ```
 
+### Calc relevant stats
+```{r}
+# calculate number of measurement points (based on hope variable as most people answered it)
+tmp <- dtFull %>%
+  select(contains("c19Hope"),
+         -contains("DO"))%>%
+  mutate_all(., as.numeric)
+
+# replace non-missing values with 1 and missing values with 0
+tmp[!is.na(tmp)] <- 1
+tmp[is.na(tmp)] <- 0
+
+# rowSum to get number of entries per participant
+dtFull$numMsr <- rowSums(tmp)
+table(dtFull$numMsr); rm(tmp)
+
+```
+
+## Continue cleaning
+```{r}
+# remove participants for long data with less than two measurements
+dtFullRed <- dtFull %>%
+  filter(numMsr > 2)
+```
+
 ## Calculate relevant variables
 ### Baseline
 #### Scales
@@ -142,19 +167,94 @@ rm(dtRaw)
 #### wide to long
 ```{r}
 # select relevant vars
-tmp <- dtFull %>%
+tmp <- dtFullRed %>%
   dplyr::transmute_at(vars(matches(
     paste(c("affAnx", "affCalm", "affDepr", "affEnerg", "affNerv", "affInsp", "affRel",
-            "affExh", "PFS01", "happy", "lifeSat", "fail01", "c19ProSo01", "c19ProSo03"), collapse = "|"), -contains("DO"))), #vars changed
+            "affExh", "PFS01", "happy", "lifeSat", "fail01", "c19ProSo03"), collapse = "|"), -contains("DO"))), #vars changed
     as.numeric)
-tmp$PPID <- dtFull$PPID
+
+# CLOSE YOUR EYES! TRIGGER WARNING! (should have named these variables better...)
+tmp <- tmp %>%
+  transmute(
+    w00_affAnx = affAnx, w00_affCalm = affCalm, w00_affDepr = affDepr, w00_affEnerg = affEnerg, w00_affNerv = affNerv, 
+    w00_affInsp = affInsp, w00_affRel = affRel, w00_affExh = affExh, w00_PFS01 = PFS01, w00_happy = happy, w00_lifeSat = lifeSat,
+    w00_fail01 = fail01, w00_c19ProSo03 = c19ProSo03,
+    w01_affAnx = w1_affAnx, w01_affCalm = w1_affCalm, w01_affDepr = w1_affDepr, w01_affEnerg = w1_affEnerg, 
+    w01_affNerv = w1_affNerv, w01_affInsp = w1_affInsp, w01_affRel = w1_affRel, w01_affExh = w1_affExh, w01_PFS01 = w1_PFS01,
+    w01_happy = NA_real_, w01_lifeSat = w1_lifeSat, w01_fail01 = w1_fail01, w01_c19ProSo03 = w1_c19ProSo03,
+    w02_affAnx = w2_affAnx, w02_affCalm = w2_affCalm, w02_affDepr = w2_affDepr, w02_affEnerg = w2_affEnerg, 
+    w02_affNerv = w2_affNerv, w02_affInsp = w2_affInsp, w02_affRel = w2_affRel, w02_affExh = w2_affExh, w02_PFS01 = w2_PFS01,
+    w02_happy = NA_real_, w02_lifeSat = NA_real_, w02_fail01 = w2_fail01, w02_c19ProSo03 = w2_c19ProSo03,
+    w03_affAnx = w3_affAnx, w03_affCalm = w3_affCalm, w03_affDepr = w3_affDepr, w03_affEnerg = w3_affEnerg, 
+    w03_affNerv = w3_affNerv, w03_affInsp = w3_affInsp, w03_affRel = w3_affRel, w03_affExh = w3_affExh, w03_PFS01 = w3_PFS01,
+    w03_happy = NA_real_, w03_lifeSat = NA_real_, w03_fail01 = w3_fail01, w03_c19ProSo03 = w3_c19ProSo03,
+    w04_affAnx = w4_affAnx, w04_affCalm = w4_affCalm, w04_affDepr = w4_affDepr, w04_affEnerg = w4_affEnerg, 
+    w04_affNerv = w4_affNerv, w04_affInsp = w4_affInsp, w04_affRel = w4_affRel, w04_affExh = w4_affExh, w04_PFS01 = w4_PFS01,
+    w04_happy = w4_happy, w04_lifeSat = w4_lifeSat, w04_fail01 = w4_fail01, w04_c19ProSo03 = w4_c19ProSo03,
+    w05_affAnx = w5_affAnx, w05_affCalm = w5_affCalm, w05_affDepr = w5_affDepr, w05_affEnerg = w5_affEnerg, 
+    w05_affNerv = w5_affNerv, w05_affInsp = w5_affInsp, w05_affRel = w5_affRel, w05_affExh = w5_affExh, w05_PFS01 = w5_PFS01,
+    w05_happy = w5_happy, w05_lifeSat = w5_lifeSat, w05_fail01 = w5_fail01, w05_c19ProSo03 = w5_c19ProSo03,
+    w06_affAnx = w6_affAnx, w06_affCalm = w6_affCalm, w06_affDepr = w6_affDepr, w06_affEnerg = w6_affEnerg, 
+    w06_affNerv = w6_affNerv, w06_affInsp = w6_affInsp, w06_affRel = w6_affRel, w06_affExh = w6_affExh, w06_PFS01 = NA_real_,
+    w06_happy = NA_real_, w06_lifeSat = NA_real_, w06_fail01 = NA_real_, w06_c19ProSo03 = w6_c19ProSo03,
+    w07_affAnx = w7_affAnx, w07_affCalm = w7_affCalm, w07_affDepr = w7_affDepr, w07_affEnerg = w7_affEnerg, 
+    w07_affNerv = w7_affNerv, w07_affInsp = w7_affInsp, w07_affRel = w7_affRel, w07_affExh = w7_affExh, w07_PFS01 = NA_real_,
+    w07_happy = NA_real_, w07_lifeSat = w7_lifeSat, w07_fail01 = NA_real_, w07_c19ProSo03 = w7_c19ProSo03,
+    w08_affAnx = w8_affAnx, w08_affCalm = w8_affCalm, w08_affDepr = w8_affDepr, w08_affEnerg = w8_affEnerg, 
+    w08_affNerv = w8_affNerv, w08_affInsp = w8_affInsp, w08_affRel = w8_affRel, w08_affExh = w8_affExh, w08_PFS01 = NA_real_,
+    w08_happy = w8_happy, w08_lifeSat = NA_real_, w08_fail01 = NA_real_, w08_c19ProSo03 = w8_c19ProSo03,
+    w09_affAnx = w9_affAnx, w09_affCalm = w9_affCalm, w09_affDepr = w9_affDepr, w09_affEnerg = w9_affEnerg, 
+    w09_affNerv = w9_affNerv, w09_affInsp = w9_affInsp, w09_affRel = w9_affRel, w09_affExh = w9_affExh, w09_PFS01 = w9_PFS01,
+    w09_happy = w9_happy, w09_lifeSat = NA_real_, w09_fail01 = w9_fail01, w09_c19ProSo03 = w9_c19ProSo03,
+    w10_affAnx = w10_affAnx, w10_affCalm = w10_affCalm, w10_affDepr = w10_affDepr, w10_affEnerg = w10_affEnerg, 
+    w10_affNerv = w10_affNerv, w10_affInsp = w10_affInsp, w10_affRel = w10_affRel, w10_affExh = w10_affExh, w10_PFS01 = NA_real_,
+    w10_happy = NA_real_, w10_lifeSat = NA_real_, w10_fail01 = NA_real_, w10_c19ProSo03 = w10_c19ProSo03,
+    w11_affAnx = w11_affAnx, w11_affCalm = w11_affCalm, w11_affDepr = w11_affDepr, w11_affEnerg = w11_affEnerg, 
+    w11_affNerv = w11_affNerv, w11_affInsp = w11_affInsp, w11_affRel = w11_affRel, w11_affExh = w11_affExh, w11_PFS01 = w11_PFS01,
+    w11_happy = w11_happy, w11_lifeSat = w11_lifeSat, w11_fail01 = w11_fail01, w11_c19ProSo03 = w11_c19ProSo03,
+    w12_affAnx = w12_affAnx, w12_affCalm = w12_affCalm, w12_affDepr = w12_affDepr, w12_affEnerg = w12_affEnerg, 
+    w12_affNerv = w12_affNerv, w12_affInsp = w12_affInsp, w12_affRel = w12_affRel, w12_affExh = w12_affExh, w12_PFS01 = w12_PFS01,
+    w12_happy = w12_happy, w12_lifeSat = w12_lifeSat, w12_fail01 = w12_fail01, w12_c19ProSo03 = w12_c19ProSo03,
+    w13_affAnx = w13_affAnx, w13_affCalm = w13_affCalm, w13_affDepr = w13_affDepr, w13_affEnerg = w13_affEnerg, 
+    w13_affNerv = w13_affNerv, w13_affInsp = w13_affInsp, w13_affRel = w13_affRel, w13_affExh = w13_affExh, w13_PFS01 = w13_PFS01,
+    w13_happy = w13_happy, w13_lifeSat = w13_lifeSat, w13_fail01 = w13_fail01, w13_c19ProSo03 = w13_c19ProSo03,
+    w14_affAnx = w14_affAnx, w14_affCalm = w14_affCalm, w14_affDepr = w14_affDepr, w14_affEnerg = w14_affEnerg, 
+    w14_affNerv = w14_affNerv, w14_affInsp = w14_affInsp, w14_affRel = w14_affRel, w14_affExh = w14_affExh, w14_PFS01 = w14_PFS01,
+    w14_happy = w14_happy, w14_lifeSat = w14_lifeSat, w14_fail01 = w14_fail01, w14_c19ProSo03 = w14_c19ProSo03,
+    w15_affAnx = w15_affAnx, w15_affCalm = w15_affCalm, w15_affDepr = w15_affDepr, w15_affEnerg = w15_affEnerg, 
+    w15_affNerv = w15_affNerv, w15_affInsp = w15_affInsp, w15_affRel = w15_affRel, w15_affExh = w15_affExh, w15_PFS01 = w15_PFS01,
+    w15_happy = w15_happy, w15_lifeSat = w15_lifeSat, w15_fail01 = w15_fail01, w15_c19ProSo03 = w15_c19ProSo03,
+    w16_affAnx = w16_affAnx, w16_affCalm = w16_affCalm, w16_affDepr = w16_affDepr, w16_affEnerg = w16_affEnerg, 
+    w16_affNerv = w16_affNerv, w16_affInsp = w16_affInsp, w16_affRel = w16_affRel, w16_affExh = w16_affExh, w16_PFS01 = w16_PFS01,
+    w16_happy = w16_happy, w16_lifeSat = w16_lifeSat, w16_fail01 = w16_fail01, w16_c19ProSo03 = w16_c19ProSo03,
+    w17_affAnx = w17_affAnx, w17_affCalm = w17_affCalm, w17_affDepr = w17_affDepr, w17_affEnerg = w17_affEnerg, 
+    w17_affNerv = w17_affNerv, w17_affInsp = w17_affInsp, w17_affRel = w17_affRel, w17_affExh = w17_affExh, w17_PFS01 = w17_PFS01,
+    w17_happy = w17_happy, w17_lifeSat = NA_real_, w17_fail01 = w17_fail01, w17_c19ProSo03 = w17_c19ProSo03,
+    w18_affAnx = w18_affAnx, w18_affCalm = w18_affCalm, w18_affDepr = w18_affDepr, w18_affEnerg = w18_affEnerg, 
+    w18_affNerv = w18_affNerv, w18_affInsp = w18_affInsp, w18_affRel = w18_affRel, w18_affExh = w18_affExh, w18_PFS01 = w18_PFS01,
+    w18_happy = w18_happy, w18_lifeSat = NA_real_, w18_fail01 = w18_fail01, w18_c19ProSo03 = w18_c19ProSo03,
+    w19_affAnx = w19_affAnx, w19_affCalm = w19_affCalm, w19_affDepr = w19_affDepr, w19_affEnerg = w19_affEnerg, 
+    w19_affNerv = w19_affNerv, w19_affInsp = w19_affInsp, w19_affRel = w19_affRel, w19_affExh = w19_affExh, w19_PFS01 = w19_PFS01,
+    w19_happy = w19_happy, w19_lifeSat = NA_real_, w19_fail01 = w19_fail01, w19_c19ProSo03 = w19_c19ProSo03,
+    w20_affAnx = w20_affAnx, w20_affCalm = w20_affCalm, w20_affDepr = w20_affDepr, w20_affEnerg = w20_affEnerg, 
+    w20_affNerv = w20_affNerv, w20_affInsp = w20_affInsp, w20_affRel = w20_affRel, w20_affExh = w20_affExh, w20_PFS01 = w20_PFS01,
+    w20_happy = w20_happy, w20_lifeSat = w20_lifeSat, w20_fail01 = w20_fail01, w20_c19ProSo03 = w20_c19ProSo03,
+    w21_affAnx = w21_affAnx, w21_affCalm = w21_affCalm, w21_affDepr = w21_affDepr, w21_affEnerg = w21_affEnerg, 
+    w21_affNerv = w21_affNerv, w21_affInsp = w21_affInsp, w21_affRel = w21_affRel, w21_affExh = w21_affExh, w21_PFS01 = w21_PFS01,
+    w21_happy = w21_happy, w21_lifeSat = w21_lifeSat, w21_fail01 = w21_fail01, w21_c19ProSo03 = w21_c19ProSo03,
+    w22_affAnx = w22_affAnx, w22_affCalm = w22_affCalm, w22_affDepr = w22_affDepr, w22_affEnerg = w22_affEnerg, 
+    w22_affNerv = w22_affNerv, w22_affInsp = w22_affInsp, w22_affRel = w22_affRel, w22_affExh = w22_affExh, w22_PFS01 = w22_PFS01,
+    w22_happy = w22_happy, w22_lifeSat = w22_lifeSat, w22_fail01 = w22_fail01, w22_c19ProSo03 = w22_c19ProSo03
+    )
+
+tmp$PPID <- dtFullRed$PPID
 tmp <- data.table::data.table(tmp)
 
 library(data.table)
 dtLong <- data.table::melt.data.table(
   data = tmp, 
   id.vars = "PPID",
-  measure.vars = patterns( # cannot access patterns directly! need to load library!!!
+  measure.vars = patterns( # cannot access patterns directly! need to load data.table library!!!
     affAnx = "affAnx",
     affCalm = "affCalm",
     affDepr = "affDepr",
@@ -167,27 +267,171 @@ dtLong <- data.table::melt.data.table(
     happy = "happy",
     lifeSat = "lifeSat",
     fail01 = "fail01", 
-    c19ProSo01 = "c19ProSo01",
-    c19ProSo03 = "c19ProSo03")
+    # c19ProSo01 = "c19ProSo01",
+    c19ProSo03 = "c19ProSo03"),
+  variable.name = "wave"
+  )
+rm(tmp)
+
+# add non-longitudinal variables to dataset
+tmp <- dtFullRed %>%
+  select(PPID,
+         coded_country)
+
+dtLong <- dtLong %>%
+  dplyr::left_join(tmp, by = "PPID"); rm(tmp)
+```
+
+#### Scales
+```{r}
+
+# input = dtLong
+# waveNum = 2
+# varNames = c("affAnx", "affDepr", "affNerv", "affExh")
+
+# load function for averaging per wave
+long_scale_calc <- function(input, waveNum, varNames) {
+  
+  input <- input %>%
+  filter(wave == waveNum) %>%
+  select(contains(varNames))
+
+# check whether minimum is the same across input columns
+  testMin = list()
+  testMin$test <- input %>%
+    summarise_each(funs(min(., na.rm = T)))%>%
+    table()
+  testMin$num <- input %>%
+    summarise_each(funs(min(., na.rm = T))) %>%
+    as.numeric()
+  ifelse(ncol(testMin$test) & nrow(testMin$test) == 1, 
+         print("All input variables have the same minimum"), 
+         stop("Warning: Minimum seems to differ across input variables"))
+
+# check whether maximum is the same across input columns
+  testMax = list()
+  testMax$test <- input %>%
+    summarise_each(funs(max(., na.rm = T)))%>%
+    table()
+  testMax$num <- input %>%
+    summarise_each(funs(max(., na.rm = T))) %>%
+    as.numeric()
+  ifelse(ncol(testMax$test) & nrow(testMax$test) == 1, 
+         print("All input variables have the same maximum"), 
+         stop("Warning: Maximum seems to differ across input variables"))
+  
+# calculate scale
+  scaleCalc <- scoreItems(keys=rep(1, ncol(input)),
+                          items = input,
+                          min = testMin$num[1], max = testMax$num[1],
+                          impute = "none")
+  
+  print(paste("Alpha for the following items in wave ", waveNum, ":", sep = ""))
+  print(varNames)
+  print(round(scaleCalc$alpha, 2))
+  
+  output <- round(as.numeric(scaleCalc$scores), 3)
+
+  return(output)
+  rm(testMin, testMax, scaleCalc, output, input)
+}
+```
+
+##### calculate scales
+```{r}
+# ---------------- positive emotion-----------------
+# create df for filling
+  tmp <- data.table(matrix(NA, nrow = nrow(dtFullRed), ncol = 23))
+
+# calculate scale per wave
+  for (waveNum in 1:max(as.numeric(dtLong$wave))) {
+    tmp[,waveNum] <- long_scale_calc(input = dtLong, waveNum = waveNum, varNames = c("affCalm", "affEnerg", "affInsp", "affRel"))
+  }
+  tmp$PPID <- dtFullRed$PPID
+
+# turn into long format again
+  tmp2 <- data.table::melt.data.table(
+    data = tmp, 
+    id.vars = "PPID",
+    variable.name = "wave",
+    value.name = "scale"
+    )
+# add to already existing dataframe of long data
+  dtLong$posEmo <- as.numeric(tmp2$scale)
+  rm(tmp, tmp2)
+
+# ---------------- negative emotion-----------------
+# create df for filling
+  tmp <- data.table(matrix(NA, nrow = nrow(dtFullRed), ncol = 23))
+
+# calculate scale per wave
+  for (waveNum in 1:max(as.numeric(dtLong$wave))) {
+    tmp[,waveNum] <- long_scale_calc(input = dtLong, waveNum = waveNum, varNames = c("affAnx", "affDepr", "affNerv", "affExh"))
+  }
+  tmp$PPID <- dtFullRed$PPID
+
+# turn into long format again
+  tmp2 <- data.table::melt.data.table(
+    data = tmp, 
+    id.vars = "PPID",
+    variable.name = "wave",
+    value.name = "scale"
+    )
+# add to already existing dataframe of long data
+  dtLong$negEmo <- as.numeric(tmp2$scale)
+  rm(tmp, tmp2)
+  
+dtLong[dtLong == "NaN"] <- NA
+```
+
+#### create centered variables (center within clsuter)
+https://kzee.github.io/Centering_Demo.html (blml::isolate unfortunately does not work)
+```{r}
+# calculate mean and sds per participant
+dtLong <- dtLong %>%
+  group_by(PPID) %>%
+  mutate(
+    negEmo_mean = mean(negEmo, na.rm = T),
+    negEmo_sd = sd(negEmo, na.rm = T),
+    posEmo_mean = mean(posEmo, na.rm = T),
+    posEmo_sd = sd(posEmo, na.rm = T),
+    PFS01_mean = mean(PFS01, na.rm = T),
+    PFS01_sd = sd(PFS01, na.rm = T),
+    fail01_mean = mean(fail01, na.rm = T),
+    fail01_sd = sd(fail01, na.rm = T),
+    happy_mean = mean(happy, na.rm = T),
+    happy_sd = sd(happy, na.rm = T),
+    c19ProSo03_mean = mean(c19ProSo03, na.rm = T),
+    c19ProSo03_sd = sd(c19ProSo03, na.rm = T),
   )
 
-
+# center within (for grand mean centering or between-person centering see above link)
+dtLong <- dtLong %>%
+  ungroup() %>%
+  mutate(
+    negEmo_cw = negEmo-negEmo_mean,
+    posEmo_cw = posEmo-posEmo_mean,
+    disemp_cw = fail01-fail01_mean,
+    PFS_cw = PFS01 - PFS01_mean,
+    WB_cw = happy-happy_mean,
+    c19ProSo_cw = c19ProSo03-c19ProSo03_mean
+  )
 ```
 
-#### create centered variables
+
+# Analysis Longitudinal
 ```{r}
-dtLong
+ana <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + 
+                    (1|coded_country) + 
+                    (1|coded_country:PPID), 
+                  data = dtLong)
 
-d <- BLch9
-
-
-dtLong <- bmlm::isolate(tmp1, by = "id",
-             value = c("fwkstrs", "fwkdis"),
-             which = "both")
+summary(ana)
+performance::icc(ana)
 ```
 
 
-# Analysis
+# Analysis Baseline
 ## MPlus Preparation
 ```{r}
  dtOut <- dtCtry %>%
