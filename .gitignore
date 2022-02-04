@@ -13,5 +13,6 @@ data/metadata
 *.xlsx
 *.zip
 *.png
+*.docx
 #data/
 Icon?

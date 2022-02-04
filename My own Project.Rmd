@@ -33,7 +33,7 @@ p_load(metafor, tidyr, dplyr, tinytex, knitr, kableExtra, DescTools, reshape2, m
 set.seed(52) # set overall random seed for reproducibility
 
 # function to calculate indirect effects
-calc_indirect_effect <- function(pathA, pathB, varA, varB, covAB, rep, conf) {
+calc_indirect_effect <- function(nameIn, pathA, pathB, varA, varB, covAB, rep, conf) {
    pest=c(pathA,pathB)
    acov <- matrix(c(varA, covAB,covAB, varB),2,2)
    mcmc <- MASS::mvrnorm(rep,pest,acov,empirical=FALSE)
@@ -46,12 +46,16 @@ calc_indirect_effect <- function(pathA, pathB, varA, varB, covAB, rep, conf) {
   UL4=format(UL,digits=4)
   hist(ab,breaks='FD',col='skyblue',xlab=paste(conf,'% Confidence Interval ','LL',LL4,'  UL',UL4),
   main='Distribution of Indirect Effect')
+  
+  # get lower and upper bound
+  out <- data.frame(nameIn = as.character(nameIn), LL = round(LL, 3), UL = round(UL, 3))
+  return(out)
 }
 
 # function to get summary statistics for MLM
 mlm_summary_out <- function(model) {
    
-  CI = lme4::confint.merMod(model, method = "boot", nsim = 500) 
+  CI = lme4::confint.merMod(model, method = "boot", nsim = 10) # increase to 500 for serious run! 
  
    dt <- data.frame(B = lme4::fixef(model),
       SE = summary(model)$coefficients[,2],
@@ -732,19 +736,40 @@ performance::icc(ana_lv123_intCrossOnly)
 # plot(saveRes)
 # autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 # autocorrelation; rm(saveRes, autocorrelation)
-
-# interactiosn
-# sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd")
-# 
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+```
+#### understand interactions
+```{r}
+# positive emotions (we save path A for later); important for indirect effects as well
+tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disemp_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disemp_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disemp_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_posEmoPP
+tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFSPP
+tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_negEmoCross
+tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "disempCtry_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
-#### indirect effects
+#### save for indirect effects (A path)
 http://www.quantpsy.org/medmc/medmc.htm
 Selig, J. P., & Preacher, K. J. (2008, June). Monte Carlo method for assessing mediation: An interactive tool for creating confidence intervals for indirect effects [Computer software]. Available from http://quantpsy.org/.
 -Run a regression analysis (or path analysis, SEM, etc.) with the IV predicting the mediator. This will give a.
@@ -752,17 +777,58 @@ Selig, J. P., & Preacher, K. J. (2008, June). Monte Carlo method for assessing m
 -If you use SEM, path analysis, multilevel modeling, or some other multivariate method to obtain both a and b from a single model, then var(a), var(b), and cov(a,b) can be found in the asymptotic covariance matrix of the parameter estimates. If you use regression to obtain a and b in separate steps, then var(a) and var(b) are simply the squared standard errors, and cov(a,b) = 0.
 
 ```{r}
-# if we want random effects
-# remotes::install_github("marklhc/bootmlm")
-# library(bootmlm)
-# bootmlm::vcov_vc(ana_lv123_intCrossAll, sd_cor = FALSE)
+paths_WB <- data.frame(
+  posEmo_plus1DisempSD_A = tmp_posEmo$slopes$Est.[1],
+  posEmo_plus1DisempSD_varA = tmp_posEmo$slopes$S.E.[1],
+  posEmo_minus1DisempSD_A = tmp_posEmo$slopes$Est.[3],
+  posEmo_minus1DisempSD_varA = tmp_posEmo$slopes$S.E.[3],
+  negEmo_plus1DisempSD_A = tmp_negEmo$slopes$Est.[1],
+  negEmo_plus1DisempSD_varA = tmp_negEmo$slopes$S.E.[1],
+  negEmo_minus1DisempSD_A = tmp_negEmo$slopes$Est.[3],
+  negEmo_minus1DisempSD_varA = tmp_negEmo$slopes$S.E.[3],
+  PFS_plus1DisempSD_A = tmp_PFS$slopes$Est.[1],
+  PFS_plus1DisempSD_varA = tmp_PFS$slopes$S.E.[1],
+  PFS_minus1DisempSD_A = tmp_PFS$slopes$Est.[3],
+  PFS_minus1DisempSD_varA = tmp_PFS$slopes$S.E.[3],
+  posEmoPP_plus1DisempSD_A = tmp_posEmoPP$slopes$Est.[1],
+  posEmoPP_plus1DisempSD_varA = tmp_posEmoPP$slopes$S.E.[1],
+  posEmoPP_minus1DisempSD_A = tmp_posEmoPP$slopes$Est.[3],
+  posEmoPP_minus1DisempSD_varA = tmp_posEmoPP$slopes$S.E.[3],
+  negEmoPP_plus1DisempSD_A = tmp_negEmoPP$slopes$Est.[1],
+  negEmoPP_plus1DisempSD_varA = tmp_negEmoPP$slopes$S.E.[1],
+  negEmoPP_minus1DisempSD_A = tmp_negEmoPP$slopes$Est.[3],
+  negEmoPP_minus1DisempSD_varA = tmp_negEmoPP$slopes$S.E.[3],
+  PFSPP_plus1DisempSD_A = tmp_PFSPP$slopes$Est.[1],
+  PFSPP_plus1DisempSD_varA = tmp_PFSPP$slopes$S.E.[1],
+  PFSPP_minus1DisempSD_A = tmp_PFSPP$slopes$Est.[3],
+  PFSPP_minus1DisempSD_varA = tmp_PFSPP$slopes$S.E.[3],
+  posEmoCross_plus1DisempSD_A = tmp_posEmoCross$slopes$Est.[1],
+  posEmoCross_plus1DisempSD_varA = tmp_posEmoCross$slopes$S.E.[1],
+  posEmoCross_minus1DisempSD_A = tmp_posEmoCross$slopes$Est.[3],
+  posEmoCross_minus1DisempSD_varA = tmp_posEmoCross$slopes$S.E.[3],
+  negEmoCross_plus1DisempSD_A = tmp_negEmoCross$slopes$Est.[1],
+  negEmoCross_plus1DisempSD_varA = tmp_negEmoCross$slopes$S.E.[1],
+  negEmoCross_minus1DisempSD_A = tmp_negEmoCross$slopes$Est.[3],
+  negEmoCross_minus1DisempSD_varA = tmp_negEmoCross$slopes$S.E.[3],
+  PFSCross_plus1DisempSD_A = tmp_PFSCross$slopes$Est.[1],
+  PFSCross_plus1DisempSD_varA = tmp_PFSCross$slopes$S.E.[1],
+  PFSCross_minus1DisempSD_A = tmp_PFSCross$slopes$Est.[3],
+  PFSCross_minus1DisempSD_varA = tmp_PFSCross$slopes$S.E.[3],
+  posEmoCtry_plus1DisempSD_A = tmp_posEmoCtry$slopes$Est.[1],
+  posEmoCtry_plus1DisempSD_varA = tmp_posEmoCtry$slopes$S.E.[1],
+  posEmoCtry_minus1DisempSD_A = tmp_posEmoCtry$slopes$Est.[3],
+  posEmoCtry_minus1DisempSD_varA = tmp_posEmoCtry$slopes$S.E.[3],
+  negEmoCtry_plus1DisempSD_A = tmp_negEmoCtry$slopes$Est.[1],
+  negEmoCtry_plus1DisempSD_varA = tmp_negEmoCtry$slopes$S.E.[1],
+  negEmoCtry_minus1DisempSD_A = tmp_negEmoCtry$slopes$Est.[3],
+  negEmoCtry_minus1DisempSD_varA = tmp_negEmoCtry$slopes$S.E.[3],
+  PFSCtry_plus1DisempSD_A = tmp_PFSCtry$slopes$Est.[1],
+  PFSCtry_plus1DisempSD_varA = tmp_PFSCtry$slopes$S.E.[1],
+  PFSCtry_minus1DisempSD_A = tmp_PFSCtry$slopes$Est.[3],
+  PFSCtry_minus1DisempSD_varA = tmp_PFSCtry$slopes$S.E.[3]
+)
 
-
-vcov(ana_lv123_intCrossAll)
-
-interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-calc_indirect_effect(1, 2, 0.5, 0.8, 0.23, 20000, 95)
-
+rm(list=ls(pattern="^tmp"))
 ```
 
 
@@ -1297,15 +1363,55 @@ performance::icc(ana_lv123_intCrossOnly)
 # autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 # autocorrelation; rm(saveRes, autocorrelation)
 
-# interactiosn
-# sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd")
-# 
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+```
+#### understand interactions
+```{r}
+# positive emotions (we save path A for later); important for indirect effects as well
+# tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disemp_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disemp_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disemp_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "disempPP_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFSPP
+tmp_WBPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "WBPP_cw", modx = "disempPP_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_WBPP
+# tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_negEmoCross
+# tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
+                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_negEmoCtry
+# tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "disempCtry_cw", 
+#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+```
+
+#### save for indirect effects (B path)
+```{r}
+tmp <- summary(ana_lv123_intCrossAll)
+
+paths_proSo <- data.frame(
+  WB_B = tmp$coefficients['WB_cw','Estimate'],
+  WB_varB = tmp$coefficients['WB_cw','Std. Error'],
+  WBPP_B = tmp$coefficients['WBPP_cw','Estimate'],
+  WBPP_varB = tmp$coefficients['WBPP_cw','Std. Error'],
+  WBCtry_B = tmp$coefficients['WBCtry_cw','Estimate'],
+  WBCtry_varB = tmp$coefficients['WBCtry_cw','Std. Error']
+)
+rm(tmp)
 ```
 
 #### save tables
@@ -1353,8 +1459,217 @@ stargazer::stargazer(proSo_CW_out,
 #rm(list=ls(pattern="^ana"))
 ```
 
-
+### calculate indirect effects
 ```{r}
+dt_indirect <- data.frame(
+# minus 1 SD disemp
+  # positive emotion
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "posEmo_minus1DisempSD",
+    pathA = paths_WB$posEmo_minus1DisempSD_A,
+    varA = paths_WB$posEmo_minus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "posEmoPP_minus1DisempSD",
+    pathA = paths_WB$posEmoPP_minus1DisempSD_A,
+    varA = paths_WB$posEmoPP_minus1DisempSD_varA,
+    pathB = paths_proSo$WBPP_B,
+    varB = paths_proSo$WBPP_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+  # cross-level (path B stays on the idividual level)
+  calc_indirect_effect(
+    nameIn = "posEmoCross_minus1DisempSD",
+    pathA = paths_WB$posEmoCross_minus1DisempSD_A,
+    varA = paths_WB$posEmoCross_minus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+  # negative emotion
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "negEmo_minus1DisempSD",
+    pathA = paths_WB$negEmo_minus1DisempSD_A,
+    varA = paths_WB$negEmo_minus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "negEmoPP_minus1DisempSD",
+    pathA = paths_WB$negEmoPP_minus1DisempSD_A,
+    varA = paths_WB$negEmoPP_minus1DisempSD_varA,
+    pathB = paths_proSo$WBPP_B,
+    varB = paths_proSo$WBPP_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  # cross-level (path B stays on the idividual level)
+  calc_indirect_effect(
+    nameIn = "negEmoCross_minus1DisempSD",
+    pathA = paths_WB$negEmoCross_minus1DisempSD_A,
+    varA = paths_WB$negEmoCross_minus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+  # perceived financial strain
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "PFS_minus1DisempSD",
+    pathA = paths_WB$PFS_minus1DisempSD_A,
+    varA = paths_WB$PFS_minus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "PFSPP_minus1DisempSD",
+    pathA = paths_WB$PFSPP_minus1DisempSD_A,
+    varA = paths_WB$PFSPP_minus1DisempSD_varA,
+    pathB = paths_proSo$WBPP_B,
+    varB = paths_proSo$WBPP_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  # cross-level (path B stays on the idividual level)
+  calc_indirect_effect(
+    nameIn = "PFSCross_minus1DisempSD",
+    pathA = paths_WB$PFSCross_minus1DisempSD_A,
+    varA = paths_WB$PFSCross_minus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+
+# plus 1 SD disemp
+  # positive emotion
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "posEmo_plus1DisempSD",
+    pathA = paths_WB$posEmo_plus1DisempSD_A,
+    varA = paths_WB$posEmo_plus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "posEmoPP_plus1DisempSD",
+    pathA = paths_WB$posEmoPP_plus1DisempSD_A,
+    varA = paths_WB$posEmoPP_plus1DisempSD_varA,
+    pathB = paths_proSo$WBPP_B,
+    varB = paths_proSo$WBPP_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+  # cross-level (path B stays on the idividual level)
+  calc_indirect_effect(
+    nameIn = "posEmoCross_plus1DisempSD",
+    pathA = paths_WB$posEmoCross_plus1DisempSD_A,
+    varA = paths_WB$posEmoCross_plus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+  # negative emotion
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "negEmo_plus1DisempSD",
+    pathA = paths_WB$negEmo_plus1DisempSD_A,
+    varA = paths_WB$negEmo_plus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "negEmoPP_plus1DisempSD",
+    pathA = paths_WB$negEmoPP_plus1DisempSD_A,
+    varA = paths_WB$negEmoPP_plus1DisempSD_varA,
+    pathB = paths_proSo$WBPP_B,
+    varB = paths_proSo$WBPP_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  # cross-level (path B stays on the idividual level)
+  calc_indirect_effect(
+    nameIn = "negEmoCross_plus1DisempSD",
+    pathA = paths_WB$negEmoCross_plus1DisempSD_A,
+    varA = paths_WB$negEmoCross_plus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+  # perceived financial strain
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "PFS_plus1DisempSD",
+    pathA = paths_WB$PFS_plus1DisempSD_A,
+    varA = paths_WB$PFS_plus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "PFSPP_plus1DisempSD",
+    pathA = paths_WB$PFSPP_plus1DisempSD_A,
+    varA = paths_WB$PFSPP_plus1DisempSD_varA,
+    pathB = paths_proSo$WBPP_B,
+    varB = paths_proSo$WBPP_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  # cross-level (path B stays on the idividual level)
+  calc_indirect_effect(
+    nameIn = "PFSCross_plus1DisempSD",
+    pathA = paths_WB$PFSCross_plus1DisempSD_A,
+    varA = paths_WB$PFSCross_plus1DisempSD_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99)
+)
+
+dt_indirect <- matrix(unlist(t(dt_indirect)), byrow = T, nrow = ncol(dt_indirect)/3, ncol = 3)
+
+stargazer::stargazer(dt_indirect, 
+                     out="output/tables/indirect_effects.html",
+                     summary=FALSE,
+                     type='html',
+                     digits=3,
+                     digits.extra = 3,
+                     title='Indirect effects')
+
+
 
 ```
 
@@ -2152,25 +2467,25 @@ stargazer::stargazer(proSo_CW_out,
 
 
 
-# Additional analyses
-1. add random slopes; especially if slopes are fixed (and random slopes do not add anything) can be quite interesting)
-2. understand between-participant and country level effects (maybe by calculating means per participant)
-3. We could also model time? (time as IV)
+<!-- # Additional analyses -->
+<!-- 1. add random slopes; especially if slopes are fixed (and random slopes do not add anything) can be quite interesting) -->
+<!-- 2. understand between-participant and country level effects (maybe by calculating means per participant) -->
+<!-- 3. We could also model time? (time as IV) -->
 
 
-# Multilevel Mediation?
-```{r}
-mlmaData <- mlma::data.org(x = cbind(dtLong$negEmo_cw, dtLong$posEmo_cw, dtLong$PFS_cw),
-                           m = dtLong$WB_cw,
-                           y = dtLong$c19ProSo03,
-                           level = cbind(dtLong$coded_country, dtLong$PPID))
-```
-
-
-<!-- # Analysis Baseline -->
-<!-- ## MPlus Preparation -->
+<!-- # Multilevel Mediation? -->
 <!-- ```{r} -->
-<!--  dtOut <- dtCtry %>% -->
+<!-- mlmaData <- mlma::data.org(x = cbind(dtLong$negEmo_cw, dtLong$posEmo_cw, dtLong$PFS_cw), -->
+<!--                            m = dtLong$WB_cw, -->
+<!--                            y = dtLong$c19ProSo03, -->
+<!--                            level = cbind(dtLong$coded_country, dtLong$PPID)) -->
+<!-- ``` -->
+
+
+<!-- <!-- # Analysis Baseline --> -->
+<!-- <!-- ## MPlus Preparation --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!--  dtOut <- dtCtry %>% --> -->
 <!--   select(contains("c19ProSo")) -->
 
 <!--   prepareMplusData(dtOut[, 1:ncol(dtOut)],  -->
