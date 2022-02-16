@@ -60,10 +60,10 @@ mlm_summary_out <- function(model) {
    dt <- data.frame(B = lme4::fixef(model),
       SE = summary(model)$coefficients[,2],
       p = parameters::p_value(model)$p,
-      CI_low = lme4::fixef(model)-1.96*summary(model)$coefficients[,2],
-      CI_up = lme4::fixef(model)+1.96*summary(model)$coefficients[,2],
       CI_low_boots = CI[4:nrow(CI),1],
-      CI_high_boots = CI[4:nrow(CI),2])%>%
+      CI_high_boots = CI[4:nrow(CI),2],
+      CI_low = lme4::fixef(model)-1.96*summary(model)$coefficients[,2],
+      CI_up = lme4::fixef(model)+1.96*summary(model)$coefficients[,2])%>%
   round(., 3)
    return(dt)
 }
@@ -435,25 +435,6 @@ dtLong[dtLong == "NaN"] <- NA
 #### create centered variables (center within clsuter)
 https://kzee.github.io/Centering_Demo.html (blml::isolate unfortunately does not work)
 ```{r}
-# calculate mean and sds per country
-dtLong <- dtLong %>%
-  group_by(coded_country) %>%
-  mutate(
-    negEmoCountry_mean = mean(negEmo, na.rm = T),
-    negEmoCountry_sd = sd(negEmo, na.rm = T),
-    posEmoCountry_mean = mean(posEmo, na.rm = T),
-    posEmoCoutry_sd = sd(posEmo, na.rm = T),
-    PFS01Country_mean = mean(PFS01, na.rm = T),
-    PFS01Country_sd = sd(PFS01, na.rm = T),
-    fail01Country_mean = mean(fail01, na.rm = T),
-    fail01Country_sd = sd(fail01, na.rm = T),
-    happyCountry_mean = mean(happy, na.rm = T),
-    happyCountry_sd = sd(happy, na.rm = T),
-    c19ProSo03Country_mean = mean(c19ProSo03, na.rm = T),
-    c19ProSo03Country_sd = sd(c19ProSo03, na.rm = T),
-  ) %>%
-  ungroup()
-
 # calculate mean and sds per participant
 dtLong <- dtLong %>%
   group_by(PPID) %>%
@@ -472,6 +453,26 @@ dtLong <- dtLong %>%
     c19ProSo03_sd = sd(c19ProSo03, na.rm = T)
   ) %>%
   ungroup()
+
+# calculate mean and sds per country
+dtLong <- dtLong %>%
+  group_by(coded_country) %>%
+  mutate(
+    negEmoCountry_mean = mean(negEmo_mean, na.rm = T),
+    negEmoCountry_sd = sd(negEmo_mean, na.rm = T),
+    posEmoCountry_mean = mean(posEmo_mean, na.rm = T),
+    posEmoCoutry_sd = sd(posEmo_mean, na.rm = T),
+    PFS01Country_mean = mean(PFS01_mean, na.rm = T),
+    PFS01Country_sd = sd(PFS01_mean, na.rm = T),
+    fail01Country_mean = mean(fail01_mean, na.rm = T),
+    fail01Country_sd = sd(fail01_mean, na.rm = T),
+    happyCountry_mean = mean(happy_mean, na.rm = T),
+    happyCountry_sd = sd(happy_mean, na.rm = T),
+    c19ProSo03Country_mean = mean(c19ProSo03_mean, na.rm = T),
+    c19ProSo03Country_sd = sd(c19ProSo03_mean, na.rm = T),
+  ) %>%
+  ungroup()
+
 
 # center within (for grand mean centering or between-person centering see above link)
 dtLong <- dtLong %>%
@@ -1671,6 +1672,11 @@ stargazer::stargazer(dt_indirect,
 
 
 
+```
+
+
+```{r}
+# run all
 ```
 
 <!-- ## Multilevel (Grand mean centering) -->
