@@ -757,11 +757,12 @@ tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", 
 tmp_PFSPP
 tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_posEmoCross
 tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmoCross
 tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+tmp_PFSCross
 tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
@@ -1365,6 +1366,7 @@ performance::icc(ana_lv123_intCrossOnly)
 # autocorrelation; rm(saveRes, autocorrelation)
 
 ```
+
 #### understand interactions
 ```{r}
 # positive emotions (we save path A for later); important for indirect effects as well
@@ -1673,6 +1675,14 @@ stargazer::stargazer(dt_indirect,
 
 
 ```
+
+# Illustration multilevel
+```{r}
+
+
+
+```
+
 
 
 ```{r}
