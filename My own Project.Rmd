@@ -55,7 +55,7 @@ calc_indirect_effect <- function(nameIn, pathA, pathB, varA, varB, covAB, rep, c
 # function to get summary statistics for MLM
 mlm_summary_out <- function(model) {
    
-  CI = lme4::confint.merMod(model, method = "boot", nsim = 10) # increase to 500 for serious run! 
+  CI = lme4::confint.merMod(model, method = "boot", nsim = 500) # increase to 500 for serious run! 
  
    dt <- data.frame(B = lme4::fixef(model),
       SE = summary(model)$coefficients[,2],
@@ -662,8 +662,7 @@ rm(list=ls(pattern="^tmp"))
 
 #### save tables
 ```{r}
- stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, 
-                      ana_lv123_intCrossAll, ana_lv123_intCrossOnly,
+ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12, ana_lv123,
                 summary=FALSE,
                 type='html',
                 rownames = TRUE,
@@ -671,10 +670,9 @@ rm(list=ls(pattern="^tmp"))
                 ci = TRUE,
                 digits=3,
                 digits.extra = 3,
-                order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15),
+                # order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15),
                 title='WellBeing Group Mean Centering Analyses',
-                column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int",
-                                  "level 1-3+crossIntAll", "level 1-3+crossIntOnly"),
+                column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
                 dep.var.labels = c("Well-Being"),
                 out="output/tables/WB_CW.html")
 
@@ -692,7 +690,7 @@ rm(list=ls(pattern="^tmp"))
 #                 dep.var.labels = c("Well-Being"),
 #                 out="output/tables/oldWB_CW.html")
 
-WB_cw_out <- mlm_summary_out(ana_lv123_intCrossAll)
+WB_cw_out <- mlm_summary_out(ana_lv123)
 
 stargazer::stargazer(WB_cw_out, 
                      out="output/tables/WB_CW_relOnly.html",
@@ -813,8 +811,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 #### save tables
 ```{r}
- stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, 
-                      ana_lv123_intCrossAll, ana_lv123_intCrossOnly,
+ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12, ana_lv123, 
                 summary=FALSE,
                 type='html',
                 rownames = TRUE,
@@ -822,28 +819,28 @@ autocorrelation; rm(saveRes, autocorrelation)
                 ci = TRUE,
                 digits=2,
                 digits.extra = 2,
-                order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15),
+                #order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15),
                 title='ProSocial Group Mean Centering Analyses',
-                column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
+                column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
                 dep.var.labels = c("ProSocial"),
                 out="output/tables/proSo_noWellBeing_CW.html")
 
-stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, 
-                      ana_lv123_intCrossAll, ana_lv123_intCrossOnly,
-                summary=FALSE,
-                type='html',
-                rownames = TRUE,
-                initial.zero=FALSE,
-                ci = TRUE,
-                digits=2,
-                digits.extra = 2,
-                # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20),
-                title='ProSocial Group Mean Centering Analyses',
-                column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
-                dep.var.labels = c("ProSocial"),
-                out="output/tables/proSo_noWellBeing_CW.html")
-
-proSo_noWellBeing_CW_out <- mlm_summary_out(ana_lv123_intCrossAll)
+# stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, 
+#                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly,
+#                 summary=FALSE,
+#                 type='html',
+#                 rownames = TRUE,
+#                 initial.zero=FALSE,
+#                 ci = TRUE,
+#                 digits=2,
+#                 digits.extra = 2,
+#                 # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20),
+#                 title='ProSocial Group Mean Centering Analyses',
+#                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
+#                 dep.var.labels = c("ProSocial"),
+#                 out="output/tables/proSo_noWellBeing_CW.html")
+# 
+proSo_noWellBeing_CW_out <- mlm_summary_out(ana_lv123)
 
 stargazer::stargazer(proSo_noWellBeing_CW_out, 
                      out="output/tables/proSo_noWellBeing_CW_relOnly.html",
@@ -979,8 +976,7 @@ rm(tmp)
 
 #### save tables
 ```{r}
- stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, ana_lv123_intCrossAll, 
-                      ana_lv123_intCrossOnly,
+ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12, ana_lv123, 
                 summary=FALSE,
                 type='html',
                 rownames = TRUE,
@@ -988,28 +984,27 @@ rm(tmp)
                 ci = TRUE,
                 digits=2,
                 digits.extra = 2,
-                order = c(1, 22, 27, 2, 23, 28, 3, 24, 29, 4, 25, 30, 5, 26, 31, 6, 10, 14, 18, 7, 11, 15, 19, 8, 12, 16, 20, 9, 13, 17, 21),
+                # order = c(1, 22, 27, 2, 23, 28, 3, 24, 29, 4, 25, 30, 5, 26, 31, 6, 10, 14, 18, 7, 11, 15, 19, 8, 12, 16, 20, 9, 13, 17, 21),
                 title='ProSocial Group Mean Centering Analyses',
-                column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
+                column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
                 dep.var.labels = c("ProSocial"),
                 out="output/tables/proSo_CW.html")
 
-stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, ana_lv123_intCrossAll, 
-                      ana_lv123_intCrossOnly,
-                summary=FALSE,
-                type='html',
-                rownames = TRUE,
-                initial.zero=FALSE,
-                ci = TRUE,
-                digits=2,
-                digits.extra = 2,
-                # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20),
-                title='ProSocial Group Mean Centering Analyses',
-                column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
-                dep.var.labels = c("ProSocial"),
-                out="output/tables/oldproSo_CW.html")
+# stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12, ana_lv123, 
+#                 summary=FALSE,
+#                 type='html',
+#                 rownames = TRUE,
+#                 initial.zero=FALSE,
+#                 ci = TRUE,
+#                 digits=2,
+#                 digits.extra = 2,
+#                 # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20),
+#                 title='ProSocial Group Mean Centering Analyses',
+#                 column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
+#                 dep.var.labels = c("ProSocial"),
+#                 out="output/tables/oldproSo_CW.html")
 
-proSo_CW_out <- mlm_summary_out(ana_lv123_intCrossAll)
+proSo_CW_out <- mlm_summary_out(ana_lv123)
 
 stargazer::stargazer(proSo_CW_out, 
                      out="output/tables/proSo_CW_relOnly.html",
