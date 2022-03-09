@@ -549,9 +549,10 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
+#### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +
+ana_lv1 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -572,34 +573,11 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation, var_ana_lv0, var_ana_lv1)
 ```
 
-Third step: Add all level 1 predictors and their interactions
-```{r}
-ana_lv1_int <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv1_int)
-performance::icc(ana_lv1_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv1_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + 
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw +
+ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw +  
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -620,45 +598,12 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
-```{r}
-ana_lv12_int <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv12_int)
-performance::icc(ana_lv12_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv12_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-
-# interactiosn
-# sjPlot::plot_model(ana_lv12_int, type = "int", mdrt.values = "meansd")
-# 
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFS_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-
-```
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + 
-                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + 
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw +
+ana_lv123 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw +  
+                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -677,98 +622,6 @@ saveRes <- residuals(ana_lv123)
 plot(saveRes)
 autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
-```
-
-```{r}
-ana_lv123_int <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                              negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +
-                      negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv123_int)
-performance::icc(ana_lv123_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv123_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
-#### cross-level interactions (1,2)
-```{r}
-ana_lv123_intCrossAll <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +  
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-ana_lv123_intCrossOnly <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +
-                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  disempPP_cw +
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv123_intCrossAll)
-performance::icc(ana_lv123_intCrossOnly)
-summary(ana_lv123_intCrossAll)
-performance::icc(ana_lv123_intCrossOnly)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-# saveRes <- residuals(ana_lv123_intCross)
-# plot(saveRes)
-# autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-# autocorrelation; rm(saveRes, autocorrelation)
-```
-#### understand interactions
-```{r}
-# positive emotions (we save path A for later); important for indirect effects as well
-tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disemp_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disemp_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disemp_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_posEmoPP
-tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSPP
-tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_posEmoCross
-tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSCross
-tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "disempCtry_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
 #### save for indirect effects (A path)
@@ -910,9 +763,10 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
+#### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + 
+ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw +  
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -933,34 +787,11 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
-Third step: Add all level 1 predictors and their interactions
-```{r}
-ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv1_int)
-performance::icc(ana_lv1_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1_int))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv1_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +  
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + 
+ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw +   
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -981,45 +812,12 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
-```{r}
-ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +  
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv12_int)
-performance::icc(ana_lv12_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv12_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-
-# interactiosn
-# sjPlot::plot_model(ana_lv12_int, type = "int", mdrt.values = "meansd")
-# 
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFS_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-```
-
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +  
-                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + 
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw + 
+ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw +   
+                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw +  
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1038,76 +836,6 @@ saveRes <- residuals(ana_lv123)
 plot(saveRes)
 autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
-```
-
-```{r}
-ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw +  
-                      negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + 
-                      negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +  
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv123_int)
-performance::icc(ana_lv123_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv123_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
-#### cross-level interactions (1,2)
-```{r}
-ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +  
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +
-                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  disempPP_cw +
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv123_intCrossAll)
-performance::icc(ana_lv123_intCrossOnly)
-summary(ana_lv123_intCrossAll)
-performance::icc(ana_lv123_intCrossOnly)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-# saveRes <- residuals(ana_lv123_intCross)
-# plot(saveRes)
-# autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-# autocorrelation; rm(saveRes, autocorrelation)
-
-# interactiosn
-# sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd")
-# 
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
 #### save tables
@@ -1186,9 +914,10 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
+#### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw +
+ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1209,34 +938,11 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
-Third step: Add all level 1 predictors and their interactions
-```{r}
-ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv1_int)
-performance::icc(ana_lv1_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1_int))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv1_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw + 
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + WBPP_cw +
+ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + WBPP_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1257,35 +963,12 @@ autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
 ```
 
-```{r}
-ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + WBPP_cw*disempPP_cw + 
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv12_int)
-performance::icc(ana_lv12_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv12_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw + 
-                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + WBPP_cw +
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw + WBCtry_cw +
+ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
+                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + WBPP_cw +
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + WBCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1304,102 +987,6 @@ saveRes <- residuals(ana_lv123)
 plot(saveRes)
 autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
 autocorrelation; rm(saveRes, autocorrelation)
-```
-
-```{r}
-ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw*disemp_cw + 
-                      negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + WBPP_cw*disempPP_cw + 
-                      negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw + WBCtry_cw*disempCtry_cw + 
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv123_int)
-performance::icc(ana_lv123_int)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-saveRes <- residuals(ana_lv123_int)
-plot(saveRes)
-autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-autocorrelation; rm(saveRes, autocorrelation)
-```
-
-#### cross-level interactions (1,2)
-```{r}
-ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw*disemp_cw +
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + WBPP_cw*disempPP_cw + 
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw + WB_cw*disempPP_cw + 
-                             negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw + WBCtry_cw*disempCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw +
-                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  disempPP_cw + WBPP_cw +
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw + WB_cw*disempPP_cw +   
-                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw + WBCtry_cw +
-                    (1|coded_country) + # each country can have its own intercept
-                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
-                  data = dtLong)
-
-summary(ana_lv123_intCrossAll)
-performance::icc(ana_lv123_intCrossOnly)
-summary(ana_lv123_intCrossAll)
-performance::icc(ana_lv123_intCrossOnly)
-
-# variances
-# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
-# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
-# var.ana.0
-# var.ana.1
-
-# more importantly calculate autocorelation for residuals
-# saveRes <- residuals(ana_lv123_intCross)
-# plot(saveRes)
-# autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass)
-# autocorrelation; rm(saveRes, autocorrelation)
-
-```
-
-#### understand interactions
-```{r}
-# positive emotions (we save path A for later); important for indirect effects as well
-# tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disemp_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disemp_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disemp_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "disempPP_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSPP
-tmp_WBPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "WBPP_cw", modx = "disempPP_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_WBPP
-# tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmoCross
-# tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
-                         johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmoCtry
-# tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "disempCtry_cw", 
-#                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
 #### save for indirect effects (B path)
@@ -1675,15 +1262,6 @@ stargazer::stargazer(dt_indirect,
 
 
 ```
-
-# Illustration multilevel
-```{r}
-
-
-
-```
-
-
 
 ```{r}
 # run all
