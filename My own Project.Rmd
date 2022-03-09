@@ -519,6 +519,7 @@ Not causal/lagged because measurement points to different and too long apart fro
 
 ## Multilevel (Group mean centering)
 CMC quite useful when within-cluster and between-cluster slopes may differ and one is mainly interesting in the within-cluster slope (based on Raudenbush and Bryk). As we see (similar to  Hamaker & Grasman, 2014) grand-mean centering (see above) results in larger effects as within-cluster centering biases effects to be smaller (more conservative and still valid)
+
 ### Well-Being
 http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only)
 
@@ -632,55 +633,27 @@ Selig, J. P., & Preacher, K. J. (2008, June). Monte Carlo method for assessing m
 -If you use SEM, path analysis, multilevel modeling, or some other multivariate method to obtain both a and b from a single model, then var(a), var(b), and cov(a,b) can be found in the asymptotic covariance matrix of the parameter estimates. If you use regression to obtain a and b in separate steps, then var(a) and var(b) are simply the squared standard errors, and cov(a,b) = 0.
 
 ```{r}
+tmp <- summary(ana_lv123)
+
 paths_WB <- data.frame(
-  posEmo_plus1DisempSD_A = tmp_posEmo$slopes$Est.[1],
-  posEmo_plus1DisempSD_varA = tmp_posEmo$slopes$S.E.[1],
-  posEmo_minus1DisempSD_A = tmp_posEmo$slopes$Est.[3],
-  posEmo_minus1DisempSD_varA = tmp_posEmo$slopes$S.E.[3],
-  negEmo_plus1DisempSD_A = tmp_negEmo$slopes$Est.[1],
-  negEmo_plus1DisempSD_varA = tmp_negEmo$slopes$S.E.[1],
-  negEmo_minus1DisempSD_A = tmp_negEmo$slopes$Est.[3],
-  negEmo_minus1DisempSD_varA = tmp_negEmo$slopes$S.E.[3],
-  PFS_plus1DisempSD_A = tmp_PFS$slopes$Est.[1],
-  PFS_plus1DisempSD_varA = tmp_PFS$slopes$S.E.[1],
-  PFS_minus1DisempSD_A = tmp_PFS$slopes$Est.[3],
-  PFS_minus1DisempSD_varA = tmp_PFS$slopes$S.E.[3],
-  posEmoPP_plus1DisempSD_A = tmp_posEmoPP$slopes$Est.[1],
-  posEmoPP_plus1DisempSD_varA = tmp_posEmoPP$slopes$S.E.[1],
-  posEmoPP_minus1DisempSD_A = tmp_posEmoPP$slopes$Est.[3],
-  posEmoPP_minus1DisempSD_varA = tmp_posEmoPP$slopes$S.E.[3],
-  negEmoPP_plus1DisempSD_A = tmp_negEmoPP$slopes$Est.[1],
-  negEmoPP_plus1DisempSD_varA = tmp_negEmoPP$slopes$S.E.[1],
-  negEmoPP_minus1DisempSD_A = tmp_negEmoPP$slopes$Est.[3],
-  negEmoPP_minus1DisempSD_varA = tmp_negEmoPP$slopes$S.E.[3],
-  PFSPP_plus1DisempSD_A = tmp_PFSPP$slopes$Est.[1],
-  PFSPP_plus1DisempSD_varA = tmp_PFSPP$slopes$S.E.[1],
-  PFSPP_minus1DisempSD_A = tmp_PFSPP$slopes$Est.[3],
-  PFSPP_minus1DisempSD_varA = tmp_PFSPP$slopes$S.E.[3],
-  posEmoCross_plus1DisempSD_A = tmp_posEmoCross$slopes$Est.[1],
-  posEmoCross_plus1DisempSD_varA = tmp_posEmoCross$slopes$S.E.[1],
-  posEmoCross_minus1DisempSD_A = tmp_posEmoCross$slopes$Est.[3],
-  posEmoCross_minus1DisempSD_varA = tmp_posEmoCross$slopes$S.E.[3],
-  negEmoCross_plus1DisempSD_A = tmp_negEmoCross$slopes$Est.[1],
-  negEmoCross_plus1DisempSD_varA = tmp_negEmoCross$slopes$S.E.[1],
-  negEmoCross_minus1DisempSD_A = tmp_negEmoCross$slopes$Est.[3],
-  negEmoCross_minus1DisempSD_varA = tmp_negEmoCross$slopes$S.E.[3],
-  PFSCross_plus1DisempSD_A = tmp_PFSCross$slopes$Est.[1],
-  PFSCross_plus1DisempSD_varA = tmp_PFSCross$slopes$S.E.[1],
-  PFSCross_minus1DisempSD_A = tmp_PFSCross$slopes$Est.[3],
-  PFSCross_minus1DisempSD_varA = tmp_PFSCross$slopes$S.E.[3],
-  posEmoCtry_plus1DisempSD_A = tmp_posEmoCtry$slopes$Est.[1],
-  posEmoCtry_plus1DisempSD_varA = tmp_posEmoCtry$slopes$S.E.[1],
-  posEmoCtry_minus1DisempSD_A = tmp_posEmoCtry$slopes$Est.[3],
-  posEmoCtry_minus1DisempSD_varA = tmp_posEmoCtry$slopes$S.E.[3],
-  negEmoCtry_plus1DisempSD_A = tmp_negEmoCtry$slopes$Est.[1],
-  negEmoCtry_plus1DisempSD_varA = tmp_negEmoCtry$slopes$S.E.[1],
-  negEmoCtry_minus1DisempSD_A = tmp_negEmoCtry$slopes$Est.[3],
-  negEmoCtry_minus1DisempSD_varA = tmp_negEmoCtry$slopes$S.E.[3],
-  PFSCtry_plus1DisempSD_A = tmp_PFSCtry$slopes$Est.[1],
-  PFSCtry_plus1DisempSD_varA = tmp_PFSCtry$slopes$S.E.[1],
-  PFSCtry_minus1DisempSD_A = tmp_PFSCtry$slopes$Est.[3],
-  PFSCtry_minus1DisempSD_varA = tmp_PFSCtry$slopes$S.E.[3]
+  posEmo_A = tmp$coefficients['posEmo_cw','Estimate'],
+  posEmo_varA = tmp$coefficients['posEmo_cw','Std. Error'],
+  negEmo_A = tmp$coefficients['negEmo_cw','Estimate'],
+  negEmo_varA = tmp$coefficients['negEmo_cw','Std. Error'],
+  PFS_A = tmp$coefficients['PFS_cw','Estimate'],
+  PFS_varA = tmp$coefficients['PFS_cw','Std. Error'],
+  posEmoPP_A = tmp$coefficients['posEmoPP_cw','Estimate'],
+  posEmoPP_varA = tmp$coefficients['posEmoPP_cw','Std. Error'],
+  negEmoPP_A = tmp$coefficients['negEmoPP_cw','Estimate'],
+  negEmoPP_varA = tmp$coefficients['negEmoPP_cw','Std. Error'],
+  PFSPP_A = tmp$coefficients['PFSPP_cw','Estimate'],
+  PFSPP_varA = tmp$coefficients['PFSPP_cw','Std. Error'],
+  posEmoCtry_A = tmp$coefficients['posEmoCtry_cw','Estimate'],
+  posEmoCtry_varA = tmp$coefficients['posEmoCtry_cw','Std. Error'],
+  negEmoCtry_A = tmp$coefficients['negEmoCtry_cw','Estimate'],
+  negEmoCtry_varA = tmp$coefficients['negEmoCtry_cw','Std. Error'],
+  PFSCtry_A = tmp$coefficients['PFSCtry_cw','Estimate'],
+  PFSCtry_varA = tmp$coefficients['PFSCtry_cw','Std. Error']
 )
 
 rm(list=ls(pattern="^tmp"))
@@ -991,7 +964,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 #### save for indirect effects (B path)
 ```{r}
-tmp <- summary(ana_lv123_intCrossAll)
+tmp <- summary(ana_lv123)
 
 paths_proSo <- data.frame(
   WB_B = tmp$coefficients['WB_cw','Estimate'],
@@ -1052,13 +1025,12 @@ stargazer::stargazer(proSo_CW_out,
 ### calculate indirect effects
 ```{r}
 dt_indirect <- data.frame(
-# minus 1 SD disemp
-  # positive emotion
+# positive emotion
   # within participant level
   calc_indirect_effect(
-    nameIn = "posEmo_minus1DisempSD",
-    pathA = paths_WB$posEmo_minus1DisempSD_A,
-    varA = paths_WB$posEmo_minus1DisempSD_varA,
+    nameIn = "posEmo",
+    pathA = paths_WB$posEmo_A,
+    varA = paths_WB$posEmo_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1066,32 +1038,31 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "posEmoPP_minus1DisempSD",
-    pathA = paths_WB$posEmoPP_minus1DisempSD_A,
-    varA = paths_WB$posEmoPP_minus1DisempSD_varA,
+    nameIn = "posEmoPP",
+    pathA = paths_WB$posEmoPP_A,
+    varA = paths_WB$posEmoPP_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99),
-  
-  # cross-level (path B stays on the idividual level)
+  # country level
   calc_indirect_effect(
-    nameIn = "posEmoCross_minus1DisempSD",
-    pathA = paths_WB$posEmoCross_minus1DisempSD_A,
-    varA = paths_WB$posEmoCross_minus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
+    nameIn = "posEmoCtry",
+    pathA = paths_WB$posEmoCtry_A,
+    varA = paths_WB$posEmoCtry_varA,
+    pathB = paths_proSo$WBCtry_B,
+    varB = paths_proSo$WBCtry_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99),
   
-  # negative emotion
+# negative emotion
   # within participant level
   calc_indirect_effect(
-    nameIn = "negEmo_minus1DisempSD",
-    pathA = paths_WB$negEmo_minus1DisempSD_A,
-    varA = paths_WB$negEmo_minus1DisempSD_varA,
+    nameIn = "negEmo",
+    pathA = paths_WB$negEmo_A,
+    varA = paths_WB$negEmo_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1099,31 +1070,31 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "negEmoPP_minus1DisempSD",
-    pathA = paths_WB$negEmoPP_minus1DisempSD_A,
-    varA = paths_WB$negEmoPP_minus1DisempSD_varA,
+    nameIn = "negEmoPP",
+    pathA = paths_WB$negEmoPP_A,
+    varA = paths_WB$negEmoPP_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99),
-  # cross-level (path B stays on the idividual level)
+  # Country level
   calc_indirect_effect(
-    nameIn = "negEmoCross_minus1DisempSD",
-    pathA = paths_WB$negEmoCross_minus1DisempSD_A,
-    varA = paths_WB$negEmoCross_minus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
+    nameIn = "negEmoCtry",
+    pathA = paths_WB$negEmoCtry_A,
+    varA = paths_WB$negEmoCtry_varA,
+    pathB = paths_proSo$WBCtry_B,
+    varB = paths_proSo$WBCtry_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99),
-  
+ 
   # perceived financial strain
   # within participant level
   calc_indirect_effect(
-    nameIn = "PFS_minus1DisempSD",
-    pathA = paths_WB$PFS_minus1DisempSD_A,
-    varA = paths_WB$PFS_minus1DisempSD_varA,
+    nameIn = "PFS",
+    pathA = paths_WB$PFS_A,
+    varA = paths_WB$PFS_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1131,119 +1102,21 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "PFSPP_minus1DisempSD",
-    pathA = paths_WB$PFSPP_minus1DisempSD_A,
-    varA = paths_WB$PFSPP_minus1DisempSD_varA,
+    nameIn = "PFSPP",
+    pathA = paths_WB$PFSPP_A,
+    varA = paths_WB$PFSPP_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99),
-  # cross-level (path B stays on the idividual level)
+  # country level
   calc_indirect_effect(
-    nameIn = "PFSCross_minus1DisempSD",
-    pathA = paths_WB$PFSCross_minus1DisempSD_A,
-    varA = paths_WB$PFSCross_minus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
-    covAB = 0,
-    rep = 5000, 
-    conf = 0.99),
-
-# plus 1 SD disemp
-  # positive emotion
-  # within participant level
-  calc_indirect_effect(
-    nameIn = "posEmo_plus1DisempSD",
-    pathA = paths_WB$posEmo_plus1DisempSD_A,
-    varA = paths_WB$posEmo_plus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
-    covAB = 0,
-    rep = 5000, 
-   conf = 0.99),
-  # between participant level
-  calc_indirect_effect(
-    nameIn = "posEmoPP_plus1DisempSD",
-    pathA = paths_WB$posEmoPP_plus1DisempSD_A,
-    varA = paths_WB$posEmoPP_plus1DisempSD_varA,
-    pathB = paths_proSo$WBPP_B,
-    varB = paths_proSo$WBPP_varB,
-    covAB = 0,
-    rep = 5000, 
-    conf = 0.99),
-  
-  # cross-level (path B stays on the idividual level)
-  calc_indirect_effect(
-    nameIn = "posEmoCross_plus1DisempSD",
-    pathA = paths_WB$posEmoCross_plus1DisempSD_A,
-    varA = paths_WB$posEmoCross_plus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
-    covAB = 0,
-    rep = 5000, 
-    conf = 0.99),
-  
-  # negative emotion
-  # within participant level
-  calc_indirect_effect(
-    nameIn = "negEmo_plus1DisempSD",
-    pathA = paths_WB$negEmo_plus1DisempSD_A,
-    varA = paths_WB$negEmo_plus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
-    covAB = 0,
-    rep = 5000, 
-   conf = 0.99),
-  # between participant level
-  calc_indirect_effect(
-    nameIn = "negEmoPP_plus1DisempSD",
-    pathA = paths_WB$negEmoPP_plus1DisempSD_A,
-    varA = paths_WB$negEmoPP_plus1DisempSD_varA,
-    pathB = paths_proSo$WBPP_B,
-    varB = paths_proSo$WBPP_varB,
-    covAB = 0,
-    rep = 5000, 
-    conf = 0.99),
-  # cross-level (path B stays on the idividual level)
-  calc_indirect_effect(
-    nameIn = "negEmoCross_plus1DisempSD",
-    pathA = paths_WB$negEmoCross_plus1DisempSD_A,
-    varA = paths_WB$negEmoCross_plus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
-    covAB = 0,
-    rep = 5000, 
-    conf = 0.99),
-  
-  # perceived financial strain
-  # within participant level
-  calc_indirect_effect(
-    nameIn = "PFS_plus1DisempSD",
-    pathA = paths_WB$PFS_plus1DisempSD_A,
-    varA = paths_WB$PFS_plus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
-    covAB = 0,
-    rep = 5000, 
-   conf = 0.99),
-  # between participant level
-  calc_indirect_effect(
-    nameIn = "PFSPP_plus1DisempSD",
-    pathA = paths_WB$PFSPP_plus1DisempSD_A,
-    varA = paths_WB$PFSPP_plus1DisempSD_varA,
-    pathB = paths_proSo$WBPP_B,
-    varB = paths_proSo$WBPP_varB,
-    covAB = 0,
-    rep = 5000, 
-    conf = 0.99),
-  # cross-level (path B stays on the idividual level)
-  calc_indirect_effect(
-    nameIn = "PFSCross_plus1DisempSD",
-    pathA = paths_WB$PFSCross_plus1DisempSD_A,
-    varA = paths_WB$PFSCross_plus1DisempSD_varA,
-    pathB = paths_proSo$WB_B,
-    varB = paths_proSo$WB_varB,
+    nameIn = "PFSCtry",
+    pathA = paths_WB$PFSCtry_A,
+    varA = paths_WB$PFSCtry_varA,
+    pathB = paths_proSo$WBCtry_B,
+    varB = paths_proSo$WBCtry_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99)
