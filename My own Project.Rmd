@@ -60,8 +60,8 @@ mlm_summary_out <- function(model) {
    dt <- data.frame(B = lme4::fixef(model),
       SE = summary(model)$coefficients[,2],
       p = parameters::p_value(model)$p,
-      CI_low_boots = CI[4:nrow(CI),1],
-      CI_high_boots = CI[4:nrow(CI),2],
+      CI_low_boots = CI[which(rownames(CI) == "(Intercept)"):nrow(CI),1], # need to make this dynamic because size changes depending on number of levels in mlm
+      CI_high_boots = CI[which(rownames(CI) == "(Intercept)") :nrow(CI),2],
       CI_low = lme4::fixef(model)-1.96*summary(model)$coefficients[,2],
       CI_up = lme4::fixef(model)+1.96*summary(model)$coefficients[,2])%>%
   round(., 3)
@@ -94,12 +94,12 @@ dtFull <- dtFull %>%
     as.numeric) #function for change
 
 # create between subjects baseline df
-dtCtry <- dtRaw %>% 
+dtCross <- dtRaw %>% 
   group_by(coded_country) %>% # group by country
-  filter(n() > 20) # remove countries with less than 100 people
-dtCtry <- dtCtry %>% #needs to be ungrouped for the scale calculation
+  filter(n() > 20) # remove countries with less than 20 people
+dtCross <- dtCross %>% #needs to be ungrouped for the scale calculation
   ungroup()
-table(dtCtry$coded_country)
+table(dtCross$coded_country)
 rm(dtRaw)
 ```
 
@@ -140,78 +140,108 @@ table(dtFullRed$coded_country)
 ```
 
 ## Calculate relevant variables
-<!-- ### Baseline -->
-<!-- #### Scales -->
-<!-- ```{r calcVars, echo=T, warning=F, message=F} -->
-<!-- # positive emotion -->
-<!--   dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% psych::describe() -->
-<!--   dtCtry$posEmo.m <- as.numeric(scoreItems(keys=c(1,1,1,1,1), # as.numeric is needed for Mplus later (does only take one-dimensional objects) -->
-<!--                             items = dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% na_if(., -99), -->
-<!--                                 min = 1, max = 5)$scores) -->
-<!--   dtCtry$posEmo.c <- as.numeric(scale(dtCtry$posEmo.m, scale = F, center = T)) -->
-<!--   dtCtry$posEmo.z <- as.numeric(scale(dtCtry$posEmo.m, scale = T)) -->
-<!--   dtCtry$posEmo.fa <- as.numeric(fa(dtCtry %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel))$scores) -->
+### Cross-Sectional/Baseline
+#### Scales
+##### Multigroup CFA
+```{r explrFactor12}
+  model <- 'level:1
+            # Latent
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            PFS =~ PFS01 + PFS02 + PFS03
+            disemp =~ fail01 + fail02 + fail03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
+            level:2
+            posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
+            negEmo =~ affAnx + affDepr + affNerv + affExh
+            disemp =~ fail01 + fail02 + fail03
+            PFS =~ PFS01 + PFS02 + PFS03
+            wellBe =~ happy + lifeSat + MLQ
+            proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03'
+#fit <- sem(model, data = dtCross, cluster = "coded_country", optim.method = "em")
+fit <- sem(model, data = dtCross, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000,
+           em.fx.tol = 1e-08, em.dx.tol = 1e-04)
+summary(fit, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T)
+```
 
-<!-- # negative emotion -->
-<!--   dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% psych::describe() -->
-<!--   dtCtry$negEmo.m <- as.numeric(scoreItems(keys=c(1,1,1,1), -->
-<!--                             items = dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% na_if(., -99), -->
-<!--                                 min = 1, max = 5)$scores) -->
-<!--   dtCtry$negEmo.c <- as.numeric(scale(dtCtry$negEmo.m, scale = F, center = T)) -->
-<!--   dtCtry$negEmo.z <- as.numeric(scale(dtCtry$negEmo.m, scale = T)) -->
-<!--   dtCtry$negEmo.fa <- as.numeric(fa(dtCtry %>% dplyr::select(affAnx, affDepr, affNerv, affExh))$scores) -->
+##### calculate scales
+```{r calcVars, echo=T, warning=F, message=F}
+# positive emotion
+  dtCross %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% psych::describe()
+  dtCross$posEmo<- as.numeric(scoreItems(keys=c(1,1,1,1,1), # as.numeric is needed for Mplus later (does only take one-dimensional objects)
+                            items = dtCross %>% dplyr::select(affCalm, affContent, affEnerg, affInsp, affRel) %>% na_if(., -99),
+                                min = 1, max = 5)$scores)
 
-<!-- # financial strain -->
-<!--   dtCtry %>% dplyr::select(PFS01, PFS02, PFS03) %>% psych::describe() -->
-<!--   dtCtry$PFS.m <- as.numeric(scoreItems(keys=c(1,1,1), -->
-<!--                             items = dtCtry %>% dplyr::select(PFS01, PFS02, PFS03) %>% na_if(., -99), -->
-<!--                                 min = -2, max = 2)$scores) -->
-<!--   dtCtry$PFS.c <- as.numeric(scale(dtCtry$PFS.m, scale = F, center = T)) -->
-<!--   dtCtry$PFS.z <- as.numeric(scale(dtCtry$PFS.m, scale = T)) -->
-<!--   dtCtry$PFS.fa <- as.numeric(fa(dtCtry %>% dplyr::select(PFS01, PFS02, PFS03))$scores) -->
+# negative emotion
+  dtCross %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% psych::describe()
+  dtCross$negEmo <- as.numeric(scoreItems(keys=c(1,1,1,1),
+                            items = dtCross %>% dplyr::select(affAnx, affDepr, affNerv, affExh) %>% na_if(., -99),
+                                min = 1, max = 5)$scores)
 
-<!-- # disempowerment -->
-<!--   dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% psych::describe() -->
-<!--   dtCtry$disemp.m <- as.numeric(scoreItems(keys=c(1,1,1), -->
-<!--                             items = dtCtry %>% dplyr::select(fail01, fail02, fail03) %>% na_if(., -99), -->
-<!--                                 min = -2, max = 2)$scores) -->
-<!--   dtCtry$disemp.c <- as.numeric(scale(dtCtry$disemp.m, scale = F, center = T)) -->
-<!--   dtCtry$disemp.z <- as.numeric(scale(dtCtry$disemp.m, scale = T)) -->
-<!--   dtCtry$disemp.fa <- as.numeric(fa(dtCtry %>% dplyr::select(fail01, fail02, fail03))$scores) -->
+# financial strain
+  dtCross %>% dplyr::select(PFS01, PFS02, PFS03) %>% psych::describe()
+  dtCross$PFS <- as.numeric(scoreItems(keys=c(1,1,1),
+                            items = dtCross %>% dplyr::select(PFS01, PFS02, PFS03) %>% na_if(., -99),
+                                min = -2, max = 2)$scores)
 
-<!-- # Well-Being -->
-<!--   # need rescaling first -->
-<!--     dtCtry$lifeSat <- scales::rescale(as.numeric(dtCtry$lifeSat), to = c(1,10)) -->
-<!--     dtCtry$MLQ <- scales::rescale(as.numeric(dtCtry$MLQ), to = c(1,10)) -->
-<!--   dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% psych::describe() -->
-<!--   dtCtry$WB.m <- as.numeric(scoreItems(keys=c(1,1,1), -->
-<!--                                 items = dtCtry %>% dplyr::select(happy, lifeSat, MLQ) %>% na_if(., -99), -->
-<!--                                 min = 1, max = 10)$scores) -->
-<!--   dtCtry$WB.c <- as.numeric(scale(dtCtry$WB.m, scale = F, center = T)) -->
-<!--   dtCtry$WB.z <- as.numeric(scale(dtCtry$WB.m, scale = T)) -->
-<!--   dtCtry$WB.fa <- as.numeric(fa(dtCtry %>% dplyr::select(happy, lifeSat, MLQ))$scores) -->
+# disempowerment
+  dtCross %>% dplyr::select(fail01, fail02, fail03) %>% psych::describe()
+  dtCross$disemp <- as.numeric(scoreItems(keys=c(1,1,1),
+                            items = dtCross %>% dplyr::select(fail01, fail02, fail03) %>% na_if(., -99),
+                                min = -2, max = 2)$scores)
 
-<!-- # pro-Social Behavior -->
-<!--   dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe() -->
-<!--   dtCtry$c19ProSo.m <- as.numeric(as.numeric(scoreItems(keys=c(1,1,1,1), -->
-<!--                                 items = dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% na_if(., -99), -->
-<!--                                 min = -3, max = 3)$scores)) -->
-<!--   dtCtry$c19ProSo.c <- as.numeric(scale(dtCtry$c19ProSo.m, scale = F, center = T)) -->
-<!--   dtCtry$c19ProSo.z <- as.numeric(scale(dtCtry$c19ProSo.m, scale = T)) -->
-<!--   dtCtry$c19ProSo.fa <- as.numeric(fa(dtCtry %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")))$scores) -->
+# Well-Being
+  # need rescaling first
+    dtCross$lifeSat <- scales::rescale(as.numeric(dtCross$lifeSat), to = c(1,10))
+    dtCross$MLQ <- scales::rescale(as.numeric(dtCross$MLQ), to = c(1,10))
+  dtCross %>% dplyr::select(happy, lifeSat, MLQ) %>% psych::describe()
+  dtCross$WB <- as.numeric(scoreItems(keys=c(1,1,1),
+                                items = dtCross %>% dplyr::select(happy, lifeSat, MLQ) %>% na_if(., -99),
+                                min = 1, max = 10)$scores)
 
-<!-- ``` -->
+# pro-Social Behavior
+  dtCross %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% psych::describe()
+  dtCross$c19ProSo <- as.numeric(as.numeric(scoreItems(keys=c(1,1,1,1),
+                                items = dtCross %>% dplyr::select(starts_with("c19ProSo"), -contains("DO")) %>% na_if(., -99),
+                                min = -3, max = 3)$scores))
 
-<!-- #### Interactions -->
-<!-- ```{r calcInt, echo=T, warning=F, message=F} -->
-<!-- # calculate interactions for observed modeling -->
-<!--   dtCtry <- dtCtry %>% -->
-<!--   mutate(intPosEmoXDisemp = posEmo.c*disemp.c, -->
-<!--          intNegEmoXDisemp = negEmo.c*disemp.c, -->
-<!--          intPFSXDisemp = PFS.c*disemp.c, scale = F, center = T) -->
-<!-- ``` -->
+```
 
-### Within Participant
+##### center scales
+```{r}
+# calculate mean and sds per country
+dtCross <- dtCross %>%
+  group_by(coded_country) %>%
+  mutate(
+    negEmoCountry_mean = mean(negEmo, na.rm = T),
+    posEmoCountry_mean = mean(posEmo, na.rm = T),
+    PFSCountry_mean = mean(PFS, na.rm = T),
+    disempCountry_mean = mean(disemp, na.rm = T),
+    WBCountry_mean = mean(WB, na.rm = T),
+    c19ProSoCountry_mean = mean(c19ProSo, na.rm = T),
+  ) %>%
+  ungroup()
+
+# group mean centering
+dtCross <- dtCross %>%
+  ungroup() %>%
+  mutate(
+    negEmo_cw = negEmo-negEmoCountry_mean,
+    posEmo_cw = posEmo-posEmoCountry_mean,
+    disemp_cw = disemp-disempCountry_mean,
+    PFS_cw = PFS - PFSCountry_mean,
+    WB_cw = WB-WBCountry_mean,
+    negEmoCtry_cw = negEmoCountry_mean-mean(negEmoCountry_mean, na.rm = T),
+    posEmoCtry_cw = posEmoCountry_mean-mean(posEmoCountry_mean, na.rm = T),
+    disempCtry_cw = disempCountry_mean-mean(disempCountry_mean, na.rm = T),
+    PFSCtry_cw =  PFSCountry_mean-mean(PFSCountry_mean, na.rm = T),
+    WBCtry_cw = WBCountry_mean-mean(WBCountry_mean, na.rm = T)
+  )
+```
+
+### Longitudinal
 #### wide to long
 ```{r}
 # select relevant vars
@@ -432,7 +462,7 @@ long_scale_calc <- function(input, waveNum, varNames) {
 dtLong[dtLong == "NaN"] <- NA
 ```
 
-#### create centered variables (center within clsuter)
+##### create centered variables (center within clsuter)
 https://kzee.github.io/Centering_Demo.html (blml::isolate unfortunately does not work)
 ```{r}
 # calculate mean and sds per participant
@@ -512,6 +542,410 @@ dtLong <- dtLong %>%
     c19ProSo_cw = c19ProSo03-c19ProSo03_mean
   )
 ```
+
+# Analysis Cross-Sectional
+## Multilevel (Group mean centering)
+CMC quite useful when within-cluster and between-cluster slopes may differ and one is mainly interesting in the within-cluster slope (based on Raudenbush and Bryk). As we see (similar to  Hamaker & Grasman, 2014) grand-mean centering (see above) results in larger effects as within-cluster centering biases effects to be smaller (more conservative and still valid)
+
+### Well-Being
+http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only)
+
+First question: Do we need multilevel modeling? Run intercept only model! If amount of variance on level 2/3 is significant multilevel modeling is handy (but taking into account nestedness almost always is).
+```{r}
+lm_lv0 <- lm(WB ~ 1, # each person can have its own intercept relative to the country
+                  data = dtCross)
+ana_lv0 <- lme4::lmer(WB ~ 1 + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+anova(ana_lv0, lm_lv0)
+summary(ana_lv0)
+performance::icc(ana_lv0)
+```
+
+#### level 1 predictors
+Second step: Add all level 1 predictors
+```{r}
+ana_lv1 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv1)
+performance::icc(ana_lv1)
+
+# variances
+var_ana_lv1 <- as.data.frame(lme4::VarCorr(ana_lv1))
+var_ana_lv0 <- as.data.frame(lme4::VarCorr(ana_lv0))
+var_ana_lv0
+var_ana_lv1
+
+# plot residuals
+saveRes <- residuals(ana_lv1)
+plot(saveRes)
+```
+
+#### level 2 predictors
+If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
+```{r}
+ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw +  
+                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12)
+performance::icc(ana_lv12)
+
+# variances
+# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
+# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
+# var.ana.0
+# var.ana.1
+
+# plot residuals
+saveRes <- residuals(ana_lv12)
+plot(saveRes)
+```
+
+#### save for indirect effects (A path)
+http://www.quantpsy.org/medmc/medmc.htm
+Selig, J. P., & Preacher, K. J. (2008, June). Monte Carlo method for assessing mediation: An interactive tool for creating confidence intervals for indirect effects [Computer software]. Available from http://quantpsy.org/.
+-Run a regression analysis (or path analysis, SEM, etc.) with the IV predicting the mediator. This will give a.
+-Run a regression analysis with the IV and mediator predicting the DV. This will give b.
+-If you use SEM, path analysis, multilevel modeling, or some other multivariate method to obtain both a and b from a single model, then var(a), var(b), and cov(a,b) can be found in the asymptotic covariance matrix of the parameter estimates. If you use regression to obtain a and b in separate steps, then var(a) and var(b) are simply the squared standard errors, and cov(a,b) = 0.
+
+```{r}
+tmp <- summary(ana_lv12)
+
+paths_WB <- data.frame(
+  posEmo_A = tmp$coefficients['posEmo_cw','Estimate'],
+  posEmo_varA = tmp$coefficients['posEmo_cw','Std. Error'],
+  negEmo_A = tmp$coefficients['negEmo_cw','Estimate'],
+  negEmo_varA = tmp$coefficients['negEmo_cw','Std. Error'],
+  PFS_A = tmp$coefficients['PFS_cw','Estimate'],
+  PFS_varA = tmp$coefficients['PFS_cw','Std. Error'],
+  posEmoCtry_A = tmp$coefficients['posEmoCtry_cw','Estimate'],
+  posEmoCtry_varA = tmp$coefficients['posEmoCtry_cw','Std. Error'],
+  negEmoCtry_A = tmp$coefficients['negEmoCtry_cw','Estimate'],
+  negEmoCtry_varA = tmp$coefficients['negEmoCtry_cw','Std. Error'],
+  PFSCtry_A = tmp$coefficients['PFSCtry_cw','Estimate'],
+  PFSCtry_varA = tmp$coefficients['PFSCtry_cw','Std. Error']
+)
+
+rm(list=ls(pattern="^tmp"))
+```
+
+
+#### save tables
+```{r}
+ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12,
+                summary=FALSE,
+                type='html',
+                rownames = TRUE,
+                initial.zero=FALSE,
+                ci = TRUE,
+                digits=3,
+                digits.extra = 3,
+                title='WellBeing Group Mean Centering Analyses',
+                column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
+                dep.var.labels = c("Well-Being"),
+                out="output/tables/Cross/WB_CW.html")
+
+WB_cw_out <- mlm_summary_out(ana_lv12)
+
+stargazer::stargazer(WB_cw_out, 
+                     out="output/tables/Cross/WB_CW_relOnly.html",
+                     summary=FALSE,
+                     type='html',
+                     digits=3,
+                     digits.extra = 3,
+                     title='WellBeing Group Mean Centering Analyses')
+
+rm(list=ls(pattern="^ana"))
+```
+
+### Pro-Sociality (no well-being)
+http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only)
+
+We have `r nrow(dtCross)-sum(is.na(dtCross$affAnx))` total measurements.
+First question: Do we need multilevel modeling? Run intercept only model! If amount of variance on level 2/3 is significant multilevel modeling is handy (but taking into account nestedness almost always is).
+```{r}
+lm_0 <- lm(c19ProSo ~ 1, # each country can have its own intercept relative to the country
+                  data = dtCross)
+ana_lv0 <- lme4::lmer(c19ProSo ~ 1 + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+anova(ana_lv0, lm_0)
+summary(ana_lv0)
+performance::icc(ana_lv0)
+
+# plot residuals
+saveRes <- residuals(ana_lv0)
+plot(saveRes)
+```
+
+#### level 1 predictors
+Second step: Add all level 1 predictors
+```{r}
+ana_lv1 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw +  
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv1)
+performance::icc(ana_lv1)
+
+# variances
+# var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1))
+# var.ana.0 <- as.data.frame(lme4::VarCorr(ana_lv0))
+# var.ana.0
+# var.ana.1
+
+# plot residuals
+saveRes <- residuals(ana_lv1)
+plot(saveRes)
+```
+
+#### level 2 predictors
+If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
+```{r}
+ana_lv12 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw +   
+                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw +  
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12)
+performance::icc(ana_lv12)
+
+# variances
+# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
+# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
+# var.ana.0
+# var.ana.1
+
+# plot residuals
+saveRes <- residuals(ana_lv12)
+plot(saveRes)
+```
+
+#### save tables
+```{r}
+ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12,
+                summary=FALSE,
+                type='html',
+                rownames = TRUE,
+                initial.zero=FALSE,
+                ci = TRUE,
+                digits=2,
+                digits.extra = 2,
+                #order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15),
+                title='ProSocial Group Mean Centering Analyses',
+                column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
+                dep.var.labels = c("ProSocial"),
+                out="output/tables/Cross/proSo_noWellBeing_CW.html")
+
+proSo_noWellBeing_CW_out <- mlm_summary_out(ana_lv12)
+
+stargazer::stargazer(proSo_noWellBeing_CW_out, 
+                     out="output/tables/Cross/proSo_noWellBeing_CW_relOnly.html",
+                     summary=FALSE,
+                     type='html',
+                     digits=3,
+                     digits.extra = 3,
+                     title='ProSocial Group Mean Centering Analyses (no wellbeing)')
+
+rm(list=ls(pattern="^ana"))
+```
+
+### Pro-Sociality (controlling for Well-Being)
+http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only)
+
+We have `r nrow(dtCross)-sum(is.na(dtCross$affAnx))` total measurements.
+First question: Do we need multilevel modeling? Run intercept only model! If amount of variance on level 2/3 is significant multilevel modeling is handy (but taking into account nestedness almost always is).
+```{r}
+lm_0 <- lm(c19ProSo ~ 1, # each country can have its own intercept relative to the country
+                  data = dtCross)
+ana_lv0 <- lme4::lmer(c19ProSo ~ 1 + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+anova(ana_lv0, lm_0)
+summary(ana_lv0)
+performance::icc(ana_lv0)
+
+# plot residuals
+saveRes <- residuals(ana_lv0)
+plot(saveRes)
+```
+
+#### level 1 predictors
+Second step: Add all level 1 predictors
+```{r}
+ana_lv1 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw +
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv1)
+performance::icc(ana_lv1)
+
+# variances
+# var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1))
+# var.ana.0 <- as.data.frame(lme4::VarCorr(ana_lv0))
+# var.ana.0
+# var.ana.1
+
+# plot residuals
+saveRes <- residuals(ana_lv1)
+plot(saveRes)
+```
+
+#### level 2 predictors
+If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
+```{r}
+ana_lv12 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
+                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + WBCtry_cw +
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12)
+performance::icc(ana_lv12)
+
+# variances
+# var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1))
+# var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0))
+# var.ana.0
+# var.ana.1
+
+# plot residuals
+saveRes <- residuals(ana_lv12)
+plot(saveRes)
+```
+
+#### save for indirect effects (B path)
+```{r}
+tmp <- summary(ana_lv12)
+
+paths_proSo <- data.frame(
+  WB_B = tmp$coefficients['WB_cw','Estimate'],
+  WB_varB = tmp$coefficients['WB_cw','Std. Error'],
+  WBCtry_B = tmp$coefficients['WBCtry_cw','Estimate'],
+  WBCtry_varB = tmp$coefficients['WBCtry_cw','Std. Error']
+)
+rm(tmp)
+```
+
+#### save tables
+```{r}
+ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12,
+                summary=FALSE,
+                type='html',
+                rownames = TRUE,
+                initial.zero=FALSE,
+                ci = TRUE,
+                digits=2,
+                digits.extra = 2,
+                # order = c(1, 22, 27, 2, 23, 28, 3, 24, 29, 4, 25, 30, 5, 26, 31, 6, 10, 14, 18, 7, 11, 15, 19, 8, 12, 16, 20, 9, 13, 17, 21),
+                title='ProSocial Group Mean Centering Analyses',
+                column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
+                dep.var.labels = c("ProSocial"),
+                out="output/tables/Cross/proSo_CW.html")
+
+proSo_CW_out <- mlm_summary_out(ana_lv12)
+
+stargazer::stargazer(proSo_CW_out, 
+                     out="output/tables/Cross/proSo_CW_relOnly.html",
+                     summary=FALSE,
+                     type='html',
+                     digits=3,
+                     digits.extra = 3,
+                     title='ProSocial Group Mean Centering Analyses')
+
+#rm(list=ls(pattern="^ana"))
+```
+
+### calculate indirect effects
+```{r}
+dt_indirect <- data.frame(
+# positive emotion
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "posEmo",
+    pathA = paths_WB$posEmo_A,
+    varA = paths_WB$posEmo_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # country level
+  calc_indirect_effect(
+    nameIn = "posEmoPP",
+    pathA = paths_WB$posEmoCtry_A,
+    varA = paths_WB$posEmoCtry_varA,
+    pathB = paths_proSo$WBCtry_B,
+    varB = paths_proSo$WBCtry_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+# negative emotion
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "negEmo",
+    pathA = paths_WB$negEmo_A,
+    varA = paths_WB$negEmo_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # country level
+  calc_indirect_effect(
+    nameIn = "negEmoPP",
+    pathA = paths_WB$negEmoCtry_A,
+    varA = paths_WB$negEmoCtry_varA,
+    pathB = paths_proSo$WBCtry_B,
+    varB = paths_proSo$WBCtry_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99),
+  
+# perceived financial strain
+  # within participant level
+  calc_indirect_effect(
+    nameIn = "PFS",
+    pathA = paths_WB$PFS_A,
+    varA = paths_WB$PFS_varA,
+    pathB = paths_proSo$WB_B,
+    varB = paths_proSo$WB_varB,
+    covAB = 0,
+    rep = 5000, 
+   conf = 0.99),
+  # between participant level
+  calc_indirect_effect(
+    nameIn = "PFSPP",
+    pathA = paths_WB$PFSCtry_A,
+    varA = paths_WB$PFSCtry_varA,
+    pathB = paths_proSo$WBCtry_B,
+    varB = paths_proSo$WBCtry_varB,
+    covAB = 0,
+    rep = 5000, 
+    conf = 0.99)
+)
+
+dt_indirect <- matrix(unlist(t(dt_indirect)), byrow = T, nrow = ncol(dt_indirect)/3, ncol = 3)
+
+stargazer::stargazer(dt_indirect, 
+                     out="output/tables/Cross/indirect_effects.html",
+                     summary=FALSE,
+                     type='html',
+                     digits=3,
+                     digits.extra = 3,
+                     title='Indirect effects')
+
+
+
+```
+
 
 # Analysis Longitudinal
 Only looking at contemporaneous effects (nothing lagged/causal)
@@ -674,7 +1108,7 @@ rm(list=ls(pattern="^tmp"))
                 title='WellBeing Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
                 dep.var.labels = c("Well-Being"),
-                out="output/tables/WB_CW.html")
+                out="output/tables/Longitudinal/WB_CW.html")
 
 # stargazer::stargazer(ana_lv123_intCrossAll,
 #                 summary=FALSE,
@@ -688,12 +1122,12 @@ rm(list=ls(pattern="^tmp"))
 #                 title='WellBeing Analyses',
 #                 # column.labels = c(),
 #                 dep.var.labels = c("Well-Being"),
-#                 out="output/tables/oldWB_CW.html")
+#                 out="output/tables/Longitudinal/oldWB_CW.html")
 
 WB_cw_out <- mlm_summary_out(ana_lv123)
 
 stargazer::stargazer(WB_cw_out, 
-                     out="output/tables/WB_CW_relOnly.html",
+                     out="output/tables/Longitudinal/WB_CW_relOnly.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -823,7 +1257,7 @@ autocorrelation; rm(saveRes, autocorrelation)
                 title='ProSocial Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
                 dep.var.labels = c("ProSocial"),
-                out="output/tables/proSo_noWellBeing_CW.html")
+                out="output/tables/Longitudinal/proSo_noWellBeing_CW.html")
 
 # stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, 
 #                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly,
@@ -838,12 +1272,12 @@ autocorrelation; rm(saveRes, autocorrelation)
 #                 title='ProSocial Group Mean Centering Analyses',
 #                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
 #                 dep.var.labels = c("ProSocial"),
-#                 out="output/tables/proSo_noWellBeing_CW.html")
+#                 out="output/tables/Longitudinal/proSo_noWellBeing_CW.html")
 # 
 proSo_noWellBeing_CW_out <- mlm_summary_out(ana_lv123)
 
 stargazer::stargazer(proSo_noWellBeing_CW_out, 
-                     out="output/tables/proSo_noWellBeing_CW_relOnly.html",
+                     out="output/tables/Longitudinal/proSo_noWellBeing_CW_relOnly.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -988,7 +1422,7 @@ rm(tmp)
                 title='ProSocial Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
                 dep.var.labels = c("ProSocial"),
-                out="output/tables/proSo_CW.html")
+                out="output/tables/Longitudinal/proSo_CW.html")
 
 # stargazer::stargazer(ana_lv0, ana_lv1, ana_lv12, ana_lv123, 
 #                 summary=FALSE,
@@ -1002,12 +1436,12 @@ rm(tmp)
 #                 title='ProSocial Group Mean Centering Analyses',
 #                 column.labels = c("randomInt", "level1", "level1-2", "level1-3"),
 #                 dep.var.labels = c("ProSocial"),
-#                 out="output/tables/oldproSo_CW.html")
+#                 out="output/tables/Longitudinal/oldproSo_CW.html")
 
 proSo_CW_out <- mlm_summary_out(ana_lv123)
 
 stargazer::stargazer(proSo_CW_out, 
-                     out="output/tables/proSo_CW_relOnly.html",
+                     out="output/tables/Longitudinal/proSo_CW_relOnly.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -1120,7 +1554,7 @@ dt_indirect <- data.frame(
 dt_indirect <- matrix(unlist(t(dt_indirect)), byrow = T, nrow = ncol(dt_indirect)/3, ncol = 3)
 
 stargazer::stargazer(dt_indirect, 
-                     out="output/tables/indirect_effects.html",
+                     out="output/tables/Longitudinal/indirect_effects.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -1134,1308 +1568,4 @@ stargazer::stargazer(dt_indirect,
 ```{r}
 # run all
 ```
-
-<!-- ## Multilevel (Grand mean centering) -->
-<!-- CMC quite useful when within-cluster and between-cluster slopes may differ and one is mainly interesting in the within-cluster slope (based on Raudenbush and Bryk). As we see (similar to  Hamaker & Grasman, 2014) grand-mean centering (see above) results in larger effects as within-cluster centering biases effects to be smaller (more conservative and still valid) -->
-<!-- ### Well-Being -->
-<!-- http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only) -->
-
-<!-- First question: Do we need multilevel modeling? Run intercept only model! If amount of variance on level 2/3 is significant multilevel modeling is handy (but taking into account nestedness almost always is). -->
-<!-- ```{r} -->
-<!-- lm_lv0 <- lm(WB ~ 1, # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-<!-- ana_lv0 <- lme4::lmer(WB ~ 1 +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- anova(ana_lv0, lm_lv0) -->
-<!-- summary(ana_lv0) -->
-<!-- performance::icc(ana_lv0) -->
-
-<!-- # calculate the ACF for lags between 1 and 50 (inclusive); probably not too important due to the large amount of missingness -->
-<!-- tmp <- dtLong %>% # sort after participant (if we have autocorrelation every 25 measurement should repeat) -->
-<!--   arrange(PPID) -->
-
-<!-- autocorrelation <- acf(dtLong$WB, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(tmp, autocorrelation) -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv0) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- Second step: Add all level 1 predictors -->
-<!-- ```{r} -->
-<!-- ana_lv1 <- lme4::lmer(WB ~ negEmo_c + posEmo_c + PFS_c + disemp_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv1) -->
-<!-- performance::icc(ana_lv1) -->
-
-<!-- # variances -->
-<!-- var_ana_lv1 <- as.data.frame(lme4::VarCorr(ana_lv1)) -->
-<!-- var_ana_lv0 <- as.data.frame(lme4::VarCorr(ana_lv0)) -->
-<!-- var_ana_lv0 -->
-<!-- var_ana_lv1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv1) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation, var_ana_lv0, var_ana_lv1) -->
-<!-- ``` -->
-
-<!-- Third step: Add all level 1 predictors and their interactions -->
-<!-- ```{r} -->
-<!-- ana_lv1_int <- lme4::lmer(WB ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv1_int) -->
-<!-- performance::icc(ana_lv1_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv1_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### level 2 predictors -->
-<!-- If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016) -->
-<!-- ```{r} -->
-<!-- ana_lv12 <- lme4::lmer(WB ~ negEmo_c + posEmo_c + PFS_c + disemp_c +  -->
-<!--                          negEmoPP_c + posEmoPP_c + PFSPP_c + disempPP_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv12) -->
-<!-- performance::icc(ana_lv12) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv12) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- ana_lv12_int <- lme4::lmer(WB ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +  -->
-<!--                              negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv12_int) -->
-<!-- performance::icc(ana_lv12_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv12_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-
-<!-- # interactiosn -->
-<!-- # sjPlot::plot_model(ana_lv12_int, type = "int", mdrt.values = "meansd") -->
-<!-- #  -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-
-<!-- ``` -->
-<!-- #### level 3 predictors -->
-<!-- If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016) -->
-<!-- ```{r} -->
-<!-- ana_lv123 <- lme4::lmer(WB ~ negEmo_c + posEmo_c + PFS_c + disemp_c +  -->
-<!--                           negEmoPP_c + posEmoPP_c + PFSPP_c + disempPP_c +  -->
-<!--                       negEmoCtry_c + posEmoCtry_c + PFSCtry_c + disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123) -->
-<!-- performance::icc(ana_lv123) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv123) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- ana_lv123_int <- lme4::lmer(WB ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +  -->
-<!--                               negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c + -->
-<!--                       negEmoCtry_c*disempCtry_c + posEmoCtry_c*disempCtry_c + PFSCtry_c*disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123_int) -->
-<!-- performance::icc(ana_lv123_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv123_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### cross-level interactions (1,2) -->
-<!-- ```{r} -->
-<!-- ana_lv123_intCrossAll <- lme4::lmer(WB ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +  -->
-<!--                              negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c +   -->
-<!--                              negEmo_c*disempPP_c + posEmo_c*disempPP_c + PFS_c*disempPP_c +   -->
-<!--                              negEmoCtry_c*disempCtry_c + posEmoCtry_c*disempCtry_c + PFSCtry_c*disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- ana_lv123_intCrossOnly <- lme4::lmer(WB ~ negEmo_c + posEmo_c + PFS_c + disemp_c + -->
-<!--                              negEmoPP_c + posEmoPP_c + PFSPP_c +  disempPP_c + -->
-<!--                              negEmo_c*disempPP_c + posEmo_c*disempPP_c + PFS_c*disempPP_c +   -->
-<!--                              negEmoCtry_c + posEmoCtry_c + PFSCtry_c + disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123_intCrossAll) -->
-<!-- performance::icc(ana_lv123_intCrossOnly) -->
-<!-- summary(ana_lv123_intCrossAll) -->
-<!-- performance::icc(ana_lv123_intCrossOnly) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- # saveRes <- residuals(ana_lv123_intCross) -->
-<!-- # plot(saveRes) -->
-<!-- # autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- # autocorrelation; rm(saveRes, autocorrelation) -->
-
-<!-- # interactiosn -->
-<!-- # sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd") -->
-<!-- #  -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- ``` -->
-
-<!-- #### save tables -->
-<!-- ```{r} -->
-<!--  stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int,  -->
-<!--                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly, -->
-<!--                 summary=FALSE, -->
-<!--                 type='html', -->
-<!--                 rownames = TRUE, -->
-<!--                 initial.zero=FALSE, -->
-<!--                 ci = TRUE, -->
-<!--                 digits=2, -->
-<!--                 digits.extra = 2, -->
-<!--                 order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15), -->
-<!--                 title='WellBeing Group Mean Centering Analyses', -->
-<!--                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int", -->
-<!--                                   "level 1-3+crossIntAll", "level 1-3+crossIntOnly"), -->
-<!--                 dep.var.labels = c("Well-Being"), -->
-<!--                 out="output/tables/WB_c.html") -->
-
-<!-- # stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int,  -->
-<!-- #                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly, -->
-<!-- #                 summary=FALSE, -->
-<!-- #                 type='html', -->
-<!-- #                 rownames = TRUE, -->
-<!-- #                 initial.zero=FALSE, -->
-<!-- #                 ci = TRUE, -->
-<!-- #                 digits=2, -->
-<!-- #                 digits.extra = 2, -->
-<!-- #                 # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20), -->
-<!-- #                 title='WellBeing Analyses', -->
-<!-- #                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int",  -->
-<!-- #                                   "level 1-3+crossIntAll", "level 1-3+crossIntOnly"), -->
-<!-- #                 dep.var.labels = c("Well-Being"), -->
-<!-- #                 out="output/tables/oldWB_c.html") -->
-
-<!-- rm(list=ls(pattern="^ana")) -->
-<!-- ``` -->
-
-<!-- ### Pro-Sociality (no well-being) -->
-<!-- http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only) -->
-
-<!-- We have `r nrow(dtLong)-sum(is.na(dtLong$affAnx))` total measurements. -->
-<!-- First question: Do we need multilevel modeling? Run intercept only model! If amount of variance on level 2/3 is significant multilevel modeling is handy (but taking into account nestedness almost always is). -->
-<!-- ```{r} -->
-<!-- lm_0 <- lm(c19ProSo03 ~ 1, # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-<!-- ana_lv0 <- lme4::lmer(c19ProSo03 ~ 1 +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- anova(ana_lv0, lm_0) -->
-<!-- summary(ana_lv0) -->
-<!-- performance::icc(ana_lv0) -->
-
-<!-- # calculate the ACF for lags between 1 and 50 (inclusive); probably not too important due to the large amount of missingness -->
-<!-- tmp <- dtLong %>% # sort after participant (if we have autocorrelation every 25 measurement should repeat) -->
-<!--   arrange(PPID) -->
-
-<!-- autocorrelation <- acf(dtLong$c19ProSo03, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(tmp, autocorrelation) -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv0) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- Second step: Add all level 1 predictors -->
-<!-- ```{r} -->
-<!-- ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv1) -->
-<!-- performance::icc(ana_lv1) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana_lv0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv1) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- Third step: Add all level 1 predictors and their interactions -->
-<!-- ```{r} -->
-<!-- ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv1_int) -->
-<!-- performance::icc(ana_lv1_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1_int)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv1_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### level 2 predictors -->
-<!-- If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016) -->
-<!-- ```{r} -->
-<!-- ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c +   -->
-<!--                          negEmoPP_c + posEmoPP_c + PFSPP_c + disempPP_c +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv12) -->
-<!-- performance::icc(ana_lv12) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv12) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +  -->
-<!--                              negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c +   -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv12_int) -->
-<!-- performance::icc(ana_lv12_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv12_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-
-<!-- # interactiosn -->
-<!-- # sjPlot::plot_model(ana_lv12_int, type = "int", mdrt.values = "meansd") -->
-<!-- #  -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- ``` -->
-
-<!-- #### level 3 predictors -->
-<!-- If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016) -->
-<!-- ```{r} -->
-<!-- ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c +   -->
-<!--                       negEmoPP_c + posEmoPP_c + PFSPP_c + disempPP_c +  -->
-<!--                       negEmoCtry_c + posEmoCtry_c + PFSCtry_c + disempCtry_c +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123) -->
-<!-- performance::icc(ana_lv123) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv123) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +   -->
-<!--                       negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c +  -->
-<!--                       negEmoCtry_c*disempCtry_c + posEmoCtry_c*disempCtry_c + PFSCtry_c*disempCtry_c +   -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123_int) -->
-<!-- performance::icc(ana_lv123_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv123_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### cross-level interactions (1,2) -->
-<!-- ```{r} -->
-<!-- ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c +  -->
-<!--                              negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c +   -->
-<!--                              negEmo_c*disempPP_c + posEmo_c*disempPP_c + PFS_c*disempPP_c +   -->
-<!--                              negEmoCtry_c*disempCtry_c + posEmoCtry_c*disempCtry_c + PFSCtry_c*disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c + -->
-<!--                              negEmoPP_c + posEmoPP_c + PFSPP_c +  disempPP_c + -->
-<!--                              negEmo_c*disempPP_c + posEmo_c*disempPP_c + PFS_c*disempPP_c +   -->
-<!--                              negEmoCtry_c + posEmoCtry_c + PFSCtry_c + disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123_intCrossAll) -->
-<!-- performance::icc(ana_lv123_intCrossOnly) -->
-<!-- summary(ana_lv123_intCrossAll) -->
-<!-- performance::icc(ana_lv123_intCrossOnly) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- # saveRes <- residuals(ana_lv123_intCross) -->
-<!-- # plot(saveRes) -->
-<!-- # autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- # autocorrelation; rm(saveRes, autocorrelation) -->
-
-<!-- # interactiosn -->
-<!-- # sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd") -->
-<!-- #  -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- ``` -->
-
-<!-- #### save tables -->
-<!-- ```{r} -->
-<!--  stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int,  -->
-<!--                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly, -->
-<!--                 summary=FALSE, -->
-<!--                 type='html', -->
-<!--                 rownames = TRUE, -->
-<!--                 initial.zero=FALSE, -->
-<!--                 ci = TRUE, -->
-<!--                 digits=2, -->
-<!--                 digits.extra = 2, -->
-<!--                 order = c(1, 17, 21, 2, 18, 22, 3, 19, 23, 16, 20, 24, 4, 7, 10, 13, 5, 8, 11, 14, 6, 9, 12, 15), -->
-<!--                 title='ProSocial Group Mean Centering Analyses', -->
-<!--                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"), -->
-<!--                 dep.var.labels = c("ProSocial"), -->
-<!--                 out="output/tables/proSo_noWellBeing_c.html") -->
-
-<!-- stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int,  -->
-<!--                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly, -->
-<!--                 summary=FALSE, -->
-<!--                 type='html', -->
-<!--                 rownames = TRUE, -->
-<!--                 initial.zero=FALSE, -->
-<!--                 ci = TRUE, -->
-<!--                 digits=2, -->
-<!--                 digits.extra = 2, -->
-<!--                 # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20), -->
-<!--                 title='ProSocial Group Mean Centering Analyses', -->
-<!--                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"), -->
-<!--                 dep.var.labels = c("ProSocial"), -->
-<!--                 out="output/tables/oldProSocial_noWellBeing_c.html") -->
-
-<!-- rm(list=ls(pattern="^ana")) -->
-<!-- ``` -->
-
-<!-- ### Pro-Sociality (controlling for Well-Being) -->
-<!-- http://www.alexanderdemos.org/Mixed5.html#plot_final_results_(fixed_effects_only) -->
-
-<!-- We have `r nrow(dtLong)-sum(is.na(dtLong$affAnx))` total measurements. -->
-<!-- First question: Do we need multilevel modeling? Run intercept only model! If amount of variance on level 2/3 is significant multilevel modeling is handy (but taking into account nestedness almost always is). -->
-<!-- ```{r} -->
-<!-- lm_0 <- lm(c19ProSo03 ~ 1, # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-<!-- ana_lv0 <- lme4::lmer(c19ProSo03 ~ 1 +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- anova(ana_lv0, lm_0) -->
-<!-- summary(ana_lv0) -->
-<!-- performance::icc(ana_lv0) -->
-
-<!-- # calculate the ACF for lags between 1 and 50 (inclusive); probably not too important due to the large amount of missingness -->
-<!-- tmp <- dtLong %>% # sort after participant (if we have autocorrelation every 25 measurement should repeat) -->
-<!--   arrange(PPID) -->
-
-<!-- autocorrelation <- acf(dtLong$c19ProSo03, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(tmp, autocorrelation) -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv0) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- Second step: Add all level 1 predictors -->
-<!-- ```{r} -->
-<!-- ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c + WB_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv1) -->
-<!-- performance::icc(ana_lv1) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana_lv0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv1) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- Third step: Add all level 1 predictors and their interactions -->
-<!-- ```{r} -->
-<!-- ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c + WB_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv1_int) -->
-<!-- performance::icc(ana_lv1_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana_lv1_int)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv1_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### level 2 predictors -->
-<!-- If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016) -->
-<!-- ```{r} -->
-<!-- ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c + WB_c +  -->
-<!--                          negEmoPP_c + posEmoPP_c + PFSPP_c + disempPP_c + WBPP_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv12) -->
-<!-- performance::icc(ana_lv12) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv12) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c + WB_c*disemp_c +  -->
-<!--                              negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c + WBPP_c*disempPP_c +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv12_int) -->
-<!-- performance::icc(ana_lv12_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv12_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### level 3 predictors -->
-<!-- If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016) -->
-<!-- ```{r} -->
-<!-- ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c + WB_c +  -->
-<!--                       negEmoPP_c + posEmoPP_c + PFSPP_c + disempPP_c + WBPP_c + -->
-<!--                       negEmoCtry_c + posEmoCtry_c + PFSCtry_c + disempCtry_c + WBCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123) -->
-<!-- performance::icc(ana_lv123) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv123) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c + WB_c*disemp_c +  -->
-<!--                       negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c + WBPP_c*disempPP_c +  -->
-<!--                       negEmoCtry_c*disempCtry_c + posEmoCtry_c*disempCtry_c + PFSCtry_c*disempCtry_c + WBCtry_c*disempCtry_c +  -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123_int) -->
-<!-- performance::icc(ana_lv123_int) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- saveRes <- residuals(ana_lv123_int) -->
-<!-- plot(saveRes) -->
-<!-- autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- autocorrelation; rm(saveRes, autocorrelation) -->
-<!-- ``` -->
-
-<!-- #### cross-level interactions (1,2) -->
-<!-- ```{r} -->
-<!-- ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_c*disemp_c + posEmo_c*disemp_c + PFS_c*disemp_c + WB_c*disemp_c + -->
-<!--                              negEmoPP_c*disempPP_c + posEmoPP_c*disempPP_c + PFSPP_c*disempPP_c + WBPP_c*disempPP_c +  -->
-<!--                              negEmo_c*disempPP_c + posEmo_c*disempPP_c + PFS_c*disempPP_c + WB_c*disempPP_c +  -->
-<!--                              negEmoCtry_c*disempCtry_c + posEmoCtry_c*disempCtry_c + PFSCtry_c*disempCtry_c + WBCtry_c*disempCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_c + posEmo_c + PFS_c + disemp_c + WB_c + -->
-<!--                              negEmoPP_c + posEmoPP_c + PFSPP_c +  disempPP_c + WBPP_c + -->
-<!--                              negEmo_c*disempPP_c + posEmo_c*disempPP_c + PFS_c*disempPP_c + WB_c*disempPP_c +    -->
-<!--                              negEmoCtry_c + posEmoCtry_c + PFSCtry_c + disempCtry_c + WBCtry_c + -->
-<!--                     (1|coded_country) + # each country can have its own intercept -->
-<!--                     (1|coded_country:PPID), # each person can have its own intercept relative to the country -->
-<!--                   data = dtLong) -->
-
-<!-- summary(ana_lv123_intCrossAll) -->
-<!-- performance::icc(ana_lv123_intCrossOnly) -->
-<!-- summary(ana_lv123_intCrossAll) -->
-<!-- performance::icc(ana_lv123_intCrossOnly) -->
-
-<!-- # variances -->
-<!-- # var.ana.1 <- as.data.frame(lme4::VarCorr(ana.1)) -->
-<!-- # var.ana.0 <- as.data.frame(lme4::VarCorr(ana.0)) -->
-<!-- # var.ana.0 -->
-<!-- # var.ana.1 -->
-
-<!-- # more importantly calculate autocorelation for residuals -->
-<!-- # saveRes <- residuals(ana_lv123_intCross) -->
-<!-- # plot(saveRes) -->
-<!-- # autocorrelation <- acf(saveRes, lag.max=50, plot=T, na.action = na.pass) -->
-<!-- # autocorrelation; rm(saveRes, autocorrelation) -->
-
-<!-- # interactiosn -->
-<!-- # sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd") -->
-<!-- #  -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- # interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE) -->
-<!-- ``` -->
-
-<!-- #### save tables -->
-<!-- ```{r} -->
-<!--  stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, ana_lv123_intCrossAll,  -->
-<!--                       ana_lv123_intCrossOnly, -->
-<!--                 summary=FALSE, -->
-<!--                 type='html', -->
-<!--                 rownames = TRUE, -->
-<!--                 initial.zero=FALSE, -->
-<!--                 ci = TRUE, -->
-<!--                 digits=2, -->
-<!--                 digits.extra = 2, -->
-<!--                 order = c(1, 22, 27, 2, 23, 28, 3, 24, 29, 4, 25, 30, 5, 26, 31, 6, 10, 14, 18, 7, 11, 15, 19, 8, 12, 16, 20, 9, 13, 17, 21), -->
-<!--                 title='ProSocial Group Mean Centering Analyses', -->
-<!--                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"), -->
-<!--                 dep.var.labels = c("ProSocial"), -->
-<!--                 out="output/tables/proSo_c.html") -->
-
-<!-- stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, ana_lv123_intCrossAll,  -->
-<!--                       ana_lv123_intCrossOnly, -->
-<!--                 summary=FALSE, -->
-<!--                 type='html', -->
-<!--                 rownames = TRUE, -->
-<!--                 initial.zero=FALSE, -->
-<!--                 ci = TRUE, -->
-<!--                 digits=2, -->
-<!--                 digits.extra = 2, -->
-<!--                 # order = c(1, 14, 18, 2, 15, 19, 3, 16, 20), -->
-<!--                 title='ProSocial Group Mean Centering Analyses', -->
-<!--                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"), -->
-<!--                 dep.var.labels = c("ProSocial"), -->
-<!--                 out="output/tables/oldproSo_c.html") -->
-
-<!-- #rm(list=ls(pattern="^ana")) -->
-<!-- ``` -->
-
-
-
-
-<!-- # Additional analyses -->
-<!-- 1. add random slopes; especially if slopes are fixed (and random slopes do not add anything) can be quite interesting) -->
-<!-- 2. understand between-participant and country level effects (maybe by calculating means per participant) -->
-<!-- 3. We could also model time? (time as IV) -->
-
-
-<!-- # Multilevel Mediation? -->
-<!-- ```{r} -->
-<!-- mlmaData <- mlma::data.org(x = cbind(dtLong$negEmo_cw, dtLong$posEmo_cw, dtLong$PFS_cw), -->
-<!--                            m = dtLong$WB_cw, -->
-<!--                            y = dtLong$c19ProSo03, -->
-<!--                            level = cbind(dtLong$coded_country, dtLong$PPID)) -->
-<!-- ``` -->
-
-
-<!-- <!-- # Analysis Baseline --> -->
-<!-- <!-- ## MPlus Preparation --> -->
-<!-- <!-- ```{r} --> -->
-<!-- <!--  dtOut <- dtCtry %>% --> -->
-<!--   select(contains("c19ProSo")) -->
-
-<!--   prepareMplusData(dtOut[, 1:ncol(dtOut)],  -->
-<!--                    "test.dat") -->
-
-
-<!-- ``` -->
-
-
-
-<!-- ## Confirmatory Factor Analysis -->
-<!-- ```{r explrFactor12} -->
-<!--   model <- 'level:1 -->
-<!--             # Latent -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--             level:2 -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03' -->
-<!-- #fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em") -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, -->
-<!--            em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
-<!-- ``` -->
-
-<!-- <!-- ### MultiGroup Confirmatory Factor Analysis --> -->
-<!-- <!-- ```{r explrFactor} --> -->
-<!-- <!-- # by country all --> -->
-<!-- <!--   fitGroup <- cfa(model, data = dtCtry, group = "coded_country") --> -->
-<!-- <!--   summary(fitGroup, fit.measures=TRUE) --> -->
-
-<!-- <!-- # by country constrained --> -->
-<!-- <!--   #fitGroupConstr <- sem(model, dtCtry, group = "coded_country", group.equal = c("intercepts", "regressions")) --> -->
-
-<!-- <!-- # compare unconstrained and constrained --> -->
-<!-- <!--   #anova(fitGroup, fitGroupConstr) --> -->
-<!-- <!-- ``` --> -->
-
-<!-- ## MultiLevel Approach -->
-<!-- ### posEmo - Well-Being with Fixed Slope -->
-<!-- ```{r} -->
-<!-- tmp <- ggplot(dtCtry, aes(x = posEmo.m, y = WB.m)) + -->
-<!--   geom_point()+ -->
-<!--   geom_smooth(method = 'lm')+ -->
-<!--   theme_minimal() -->
-
-<!-- ggExtra::ggMarginal( -->
-<!--   tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8' -->
-<!-- ) -->
-
-<!-- # fit model with fixed slope -->
-<!--   mod1Fix <- lme4::lmer(WB.m ~ posEmo.c + (1|coded_country), data = dtCtry) -->
-<!--   summary(mod1Fix) -->
-<!-- ``` -->
-
-<!-- ### posEmo - Well-Being with Random Slope -->
-<!-- ```{r} -->
-<!-- tmp <- ggplot(dtCtry, aes(x = posEmo.m, y = WB.m, color = coded_country)) + -->
-<!--   geom_point()+ -->
-<!--   geom_smooth(method = 'lm')+ -->
-<!--   theme_minimal() -->
-<!-- plotly::ggplotly(tmp) -->
-
-<!-- # fit model with random slope -->
-<!--   mod1Rand <- lme4::lmer(WB.m ~ posEmo.c + (1 + posEmo.c|coded_country), data = dtCtry) -->
-<!--   anova(mod1Fix, mod1Rand) # test diff -->
-<!--   summary(mod1Rand) -->
-<!--   sjPlot::plot_model(mod1Rand, type = c("re"), show.values = T, value.offset = .5) -->
-
-<!-- ``` -->
-
-<!-- ### Pro-Social - Well-Being with Fixed Slope -->
-<!-- ```{r} -->
-<!-- tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m)) + -->
-<!--   geom_point()+ -->
-<!--   geom_smooth(method = 'lm')+ -->
-<!--   theme_minimal() -->
-
-<!-- ggExtra::ggMarginal( -->
-<!--   tmp, type = 'histogram', margins = 'both', size = 4, col = '#0F0101', fill = '#37AAE8' -->
-<!-- ) -->
-
-<!-- # fit model with fixed slope -->
-<!--   mod2Fix <- lme4::lmer(WB.m ~ c19ProSo.c + (1|coded_country), data = dtCtry) -->
-<!--   summary(mod2Fix) -->
-<!-- ``` -->
-
-<!-- ### ProSo - Well-Being with Random Slope -->
-<!-- ```{r} -->
-<!-- tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) + -->
-<!--   geom_point()+ -->
-<!--   geom_smooth(method = 'lm')+ -->
-<!--   theme_minimal() -->
-<!-- plotly::ggplotly(tmp) -->
-
-<!-- # fit model with random slope -->
-<!--   mod2Rand <- lme4::lmer(WB.m ~ c19ProSo.c + (1 + c19ProSo.c|coded_country), data = dtCtry) -->
-<!--   anova(mod2Fix, mod2Rand) # test diff -->
-<!--   summary(mod2Rand) -->
-<!--   sjPlot::plot_model(mod2Rand, type =  c("re"), show.values = T, value.offset = .5) -->
-<!-- ``` -->
-
-<!-- ### posEmo -ProSo - Well-Being with Fixed Slope -->
-<!-- ```{r} -->
-<!-- # tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) + -->
-<!-- #   geom_point()+ -->
-<!-- #   geom_smooth(method = 'lm')+ -->
-<!-- #   theme_minimal() -->
-<!-- # plotly::ggplotly(tmp) -->
-
-<!-- # fit model with random slope -->
-<!--   mod3Fix <- lme4::lmer(WB.m ~ c19ProSo.c + posEmo.c + (1|coded_country), data = dtCtry) -->
-<!--   summary(mod3Fix) -->
-<!--   sjPlot::plot_model(mod3Fix, type =  c("re"), show.values = T, value.offset = .5) -->
-<!-- ``` -->
-
-<!-- ### posEmo -ProSo - Well-Being with Random Slope -->
-<!-- ```{r} -->
-<!-- # tmp <- ggplot(dtCtry, aes(x = c19ProSo.m, y = WB.m, color = coded_country)) + -->
-<!-- #   geom_point()+ -->
-<!-- #   geom_smooth(method = 'lm')+ -->
-<!-- #   theme_minimal() -->
-<!-- # plotly::ggplotly(tmp) -->
-
-<!-- # fit model with random slope -->
-<!--   mod3Rand <- lme4::lmer(WB.m ~ c19ProSo.c + posEmo.c + (1+ c19ProSo.c + posEmo.c |coded_country), data = dtCtry, REML = FALSE,  control = lme4::lmerControl(optimizer ="Nelder_Mead")) -->
-<!--   summary(mod3Rand) -->
-<!--   sjPlot::plot_model(mod3Rand, type =  c("re"), show.values = T, value.offset = .5) -->
-<!-- ``` -->
-
-<!-- ### DV: Well-Being full model -->
-<!-- ```{r} -->
-<!-- # fit model with random slope -->
-<!--   mod5Med <- lme4::lmer(WB.z ~ disemp.z*posEmo.z + disemp.z*negEmo.z + disemp.z*PFS.z + (1 |coded_country), data = dtCtry) -->
-<!--   mod5DV <- lme4::lmer(c19ProSo.m ~ WB.z + disemp.z*posEmo.z + disemp.z*negEmo.z + disemp.z*PFS.z + (1 |coded_country), data = dtCtry) -->
-<!--   summary(mod5Med) -->
-<!--   summary(mod5DV) -->
-<!-- # mediation   -->
-<!--   anaMed <- mediation::mediate(mod5Med, mod5DV, treat='negEmo.z', mediator='WB.z', sims = 100) -->
-<!--   summary(anaMed) -->
-<!-- # test for moderated mediation -->
-<!--   mediation::test.modmed(anaMed, list(disemp.z = -1), covariates.2 = list(disemp.z = 1), sims = 100) -->
-
-<!-- # test for values at different levels of moderator  -->
-
-
-
-<!--   lattice::dotplot(ranef(mod5Rand, postVar=TRUE)) -->
-
-
-
-<!-- ``` -->
-
-<!-- ### Table: Multilevel Approach -->
-<!-- ```{r} -->
-<!-- sjPlot::tab_model(mod1Fix, mod1Rand, mod2Fix, mod2Rand, mod3Fix, mod3Rand) -->
-<!-- ``` -->
-
-
-<!-- ## Multilevel Path Modeling -->
-<!-- ### CFA: Check latent constructs -->
-<!-- ```{r} -->
-<!--   model <- 'level:1 -->
-<!--             # Latent -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--             level:2 -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03' -->
-<!-- #fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em") -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, -->
-<!--            em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
-
-<!-- ``` -->
-
-<!-- ### Well-Being as DV -->
-<!-- We run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values. -->
-<!-- ```{r} -->
-<!-- # Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY): -->
-<!-- # By adding the same model again on level 2, we are estimating the latent means now -->
-<!--   model <- 'level:1 -->
-<!--             # a path -->
-<!--             WB.m ~ a1*posEmo.c + a2*negEmo.c + a3*PFS.c + a4*disemp.c + a5*intPosEmoXDisemp + a6*intNegEmoXDisemp + a7*intPFSXDisemp -->
-<!--             level:2 -->
-<!--             # d path -->
-<!--             WB.m ~ d1*posEmo.c + d2*negEmo.c + d3*PFS.c + d4*disemp.c + d5*intPosEmoXDisemp + d6*intNegEmoXDisemp + d7*intPFSXDisemp' -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- # fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, -->
-<!-- #            em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavInspect(fit, "icc") -->
-<!-- ``` -->
-
-<!-- ### Pro-Sociality as DV -->
-<!-- We run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values. -->
-<!-- ```{r} -->
-<!-- # Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY): -->
-<!-- # By adding the same model again on level 2, we are estimating the latent means now -->
-<!--   model <- 'level:1 -->
-<!--             # c path -->
-<!--             c19ProSo.m ~ c1*posEmo.c + c2*negEmo.c + c3*PFS.c + c4*disemp.c + c5*intPosEmoXDisemp + c6*intNegEmoXDisemp + c7*intPFSXDisemp -->
-<!--             # a path -->
-<!--             WB.m ~ a1*posEmo.c + a2*negEmo.c + a3*PFS.c + a4*disemp.c + a5*intPosEmoXDisemp + a6*intNegEmoXDisemp + a7*intPFSXDisemp -->
-<!--             # b path -->
-<!--             c19ProSo.m ~ b1*WB.m -->
-<!--             level:2 -->
-<!--             # f path -->
-<!--             c19ProSo.m ~ f1*posEmo.c + f2*negEmo.c + f3*PFS.c + f4*disemp.c + f5*intPosEmoXDisemp + f6*intNegEmoXDisemp + f7*intPFSXDisemp -->
-<!--             # d path -->
-<!--             WB.m ~ d1*posEmo.c + d2*negEmo.c + d3*PFS.c + d4*disemp.c + d5*intPosEmoXDisemp + d6*intNegEmoXDisemp + d7*intPFSXDisemp -->
-<!--             # e path -->
-<!--             c19ProSo.m ~ e1*WB.m' -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- # fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, -->
-<!-- #            em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavInspect(fit, "icc") -->
-<!-- ``` -->
-
-<!-- # OLD CODE: THIS IS REALLY COOL BUT DOES NOT WORK VERY WELL -->
-<!-- ## Multilevel SEM -->
-<!-- ### Mean Center all relevant vars -->
-<!-- ```{r} -->
-<!-- # mean center the individual scales (this works but want to be sure) -->
-<!--   # dtCtry <- dtCtry %>% -->
-<!--   #   dplyr::mutate_at(vars(matches( -->
-<!--   #     paste(c("aff", "PFS", "fail", "happy", "lifeSat", "MLQ", "c19ProSo"), collapse = "|"), -contains("DO"))), #vars changed -->
-<!--   #     scale, center = T, scale = F) #function for change -->
-
-
-<!-- # mean center "save" way -->
-<!-- dtCtry <- dtCtry %>% -->
-<!--     mutate(affCalm = scale(affCalm, center = T, scale = F), -->
-<!--            affContent = scale(affContent, center = T, scale = F), -->
-<!--            affEnerg = scale(affEnerg, center = T, scale = F), -->
-<!--            affInsp = scale(affInsp, center = T, scale = F), -->
-<!--            affRel = scale(affRel, center = T, scale = F), -->
-<!--            affAnx = scale(affAnx, center = T, scale = F), -->
-<!--            affDepr = scale(affDepr, center = T, scale = F), -->
-<!--            affNerv = scale(affNerv, center = T, scale = F), -->
-<!--            affExh = scale(affExh, center = T, scale = F), -->
-<!--            PFS01 = scale(PFS01, center = T, scale = F), -->
-<!--            PFS02 = scale(PFS02, center = T, scale = F), -->
-<!--            PFS03 = scale(PFS03, center = T, scale = F), -->
-<!--            fail01 = scale(fail01, center = T, scale = F), -->
-<!--            fail02 = scale(fail02, center = T, scale = F), -->
-<!--            fail03 = scale(fail03, center = T, scale = F), -->
-<!--            happy = scale(happy, center = T, scale = F), -->
-<!--            lifeSat = scale(lifeSat, center = T, scale = F), -->
-<!--            MLQ = scale(MLQ, center = T, scale = F), -->
-<!--            c19ProSo01 = scale(c19ProSo01, center = T, scale = F), -->
-<!--            c19ProSo02 = scale(c19ProSo02, center = T, scale = F), -->
-<!--            c19ProSo03 = scale(c19ProSo03, center = T, scale = F), -->
-<!--            c19ProSo04 = scale(c19ProSo04, center = T, scale = F), -->
-<!--            ) -->
-
-
-<!-- # calculate interactions for the latent constructs -->
-<!--   dtCtry <- dtCtry %>% -->
-<!--     mutate(fail01XposEmo01 = scale(fail01*affCalm, center = T, scale = F), -->
-<!--            fail01XposEmo02 = scale(fail01*affContent, center = T, scale = F), -->
-<!--            fail01XposEmo03 = scale(fail01*affEnerg, center = T, scale = F), -->
-<!--            fail01XposEmo04 = scale(fail01*affInsp, center = T, scale = F), -->
-<!--            fail01XposEmo05 = scale(fail01*affRel, center = T, scale = F), -->
-<!--            fail02XposEmo01 = scale(fail02*affCalm, center = T, scale = F), -->
-<!--            fail02XposEmo02 = scale(fail02*affContent, center = T, scale = F), -->
-<!--            fail02XposEmo03 = scale(fail02*affEnerg, center = T, scale = F), -->
-<!--            fail02XposEmo04 = scale(fail02*affInsp, center = T, scale = F), -->
-<!--            fail02XposEmo05 = scale(fail02*affRel, center = T, scale = F), -->
-<!--            fail03XposEmo01 = scale(fail03*affCalm, center = T, scale = F), -->
-<!--            fail03XposEmo02 = scale(fail03*affContent, center = T, scale = F), -->
-<!--            fail03XposEmo03 = scale(fail03*affEnerg, center = T, scale = F), -->
-<!--            fail03XposEmo04 = scale(fail03*affInsp, center = T, scale = F), -->
-<!--            fail03XposEmo05 = scale(fail03*affRel, center = T, scale = F) -->
-<!--            ) -->
-
-<!--   # calculate interactions for the latent constructs -->
-<!--   dtCtry <- dtCtry %>% -->
-<!--     mutate(fail01XposEmo01 = fail01*affCalm, -->
-<!--            fail01XposEmo02 = fail01*affContent, -->
-<!--            fail01XposEmo03 = fail01*affEnerg, -->
-<!--            fail01XposEmo04 = fail01*affInsp, -->
-<!--            fail01XposEmo05 = fail01*affRel, -->
-<!--            fail02XposEmo01 = fail02*affCalm, -->
-<!--            fail02XposEmo02 = fail02*affContent, -->
-<!--            fail02XposEmo03 = fail02*affEnerg, -->
-<!--            fail02XposEmo04 = fail02*affInsp, -->
-<!--            fail02XposEmo05 = fail02*affRel, -->
-<!--            fail03XposEmo01 = fail03*affCalm, -->
-<!--            fail03XposEmo02 = fail03*affContent, -->
-<!--            fail03XposEmo03 = fail03*affEnerg, -->
-<!--            fail03XposEmo04 = fail03*affInsp, -->
-<!--            fail03XposEmo05 = fail03*affRel -->
-<!--            ) -->
-<!-- ``` -->
-
-
-<!-- ### posEmo - WB - proSo  -->
-<!-- #### Normal SEM -->
-<!-- ```{r} -->
-<!-- model <- '# Model  -->
-<!--             posEmo  =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
-<!--             WB =~ happy + lifeSat + MLQ -->
-<!--             c19ProSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 + c19ProSo04 -->
-<!--           # Regression -->
-<!--             c19ProSo ~ a*posEmo -->
-<!--             WB ~ b*c19ProSo + c*posEmo' -->
-<!-- fit <- sem(model, data = dtCtry) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
-
-
-<!-- ``` -->
-
-<!-- #### Multilevel SEM Model 1-1-1 -->
-<!-- First we run a model that has no specified level 2 (only covariances) -->
-<!-- ```{r} -->
-<!-- # Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY): -->
-<!-- # By adding the same model again on level 2, we are estimating the latent means now -->
-<!-- # saturated model on level 2 -->
-<!--   model <- 'level:1 -->
-<!--             c19ProSo.c ~ a*posEmo.c -->
-<!--             WB.m ~ b*c19ProSo.c + c*posEmo.c -->
-<!--             level:2 -->
-<!--             c19ProSo.c ~~ posEmo.c -->
-<!--             c19ProSo.c ~~ WB.m -->
-<!--             WB.m ~~ posEmo.c -->
-<!--             # Indirect effects -->
-<!--             ab:=a*b -->
-<!--             total:=ab+c' -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- ``` -->
-
-<!-- Next we run a model that also has no level 2 specified (only intercepts) -->
-<!-- ```{r} -->
-<!-- # level 2 only intercepts -->
-<!--   model <- 'level:1 -->
-<!--             c19ProSo.c ~ a*posEmo.c -->
-<!--             WB.m ~ b*c19ProSo.c + c*posEmo.c -->
-<!--             level:2 -->
-<!--             c19ProSo.c ~ 1 -->
-<!--             posEmo.c ~1 -->
-<!--             WB.m ~ 1 -->
-<!--             # Indirect effects -->
-<!--             ab:=a*b -->
-<!--             total:=ab+c' -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- ``` -->
-
-<!-- Finally we run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values. -->
-<!-- ```{r} -->
-<!-- # specified model -->
-<!-- model <- 'level:1 -->
-<!--           c19ProSo.c ~ a*posEmo.c -->
-<!--           WB.m ~ b*c19ProSo.c + c*posEmo.c -->
-<!--           level:2 -->
-<!--           c19ProSo.c ~ d*posEmo.c -->
-<!--           WB.m ~ e*c19ProSo.c + f*posEmo.c -->
-<!--           # Indirect and total effects within -->
-<!--           ab:=a*b -->
-<!--           totalwith:=ab+c  -->
-<!--           # Indirect and total effects between -->
-<!--           de:=d*e -->
-<!--           totalbw:=de+f'  -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavInspect(fit, "icc") -->
-<!-- ``` -->
-
-<!-- ### predictors - WB   -->
-<!-- #### Multilevel SEM (latent vars) -->
-<!-- ##### First: Measurement model -->
-<!-- We run a model in which the level 2 structure mirrors level 1. This means that on level 2 we model the intercepts (means) and one level 1 the values. -->
-<!-- In this first step, we test the measurement model to see whether the constructs even fit. Fit indeces seem adequate. -->
-<!-- ```{r} -->
-<!-- # Explanation for below (from: https://www.youtube.com/watch?v=GZMXEq7GPvY): -->
-<!-- # By adding the same model again on level 2, we are estimating the latent means now -->
-<!--   model <- 'level:1 -->
-<!--             # Latent -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--             level:2 -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03' -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!-- lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
-
-<!-- ``` -->
-
-<!-- ##### Second: Regression Model -->
-<!-- ```{r} -->
-<!--   model <- 'level:1 -->
-<!--           # Latent IVs -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--           # Latent Mediator -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--           # Latent DV -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--           # Regression -->
-<!--             wellBe ~ a1*posEmo + a2*negEmo + a3*PFS + a4*disemp -->
-<!--             level:2 -->
-<!--           # Latent -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--           # Regression -->
-<!--             wellBe ~ d1*posEmo + d2*negEmo + d3*PFS + d4*disemp' -->
-<!-- #fit <- sem(model, data = dtCtry, cluster = "coded_country") -->
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, -->
-<!--            em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
-<!-- ``` -->
-
-<!-- ##### Third: Interaction Model -->
-<!-- ```{r} -->
-<!--   model <- 'level:1 -->
-<!--           # Latent Constructs -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel  -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--           # Interactions -->
-<!--             failXposEmo =~ fail01XposEmo01 + fail01XposEmo02 + fail01XposEmo03 + fail01XposEmo04 + fail01XposEmo05 + fail02XposEmo01 + fail02XposEmo02 + fail02XposEmo03 + fail02XposEmo04 + fail02XposEmo05 + fail03XposEmo01 + fail03XposEmo02 + fail03XposEmo03 + fail03XposEmo04 + fail03XposEmo05 -->
-<!--           # Regression -->
-<!--             wellBe ~ a1*posEmo + a2*negEmo + a3*PFS + a4*disemp + a5*failXposEmo -->
-<!--             level:2 -->
-<!--           # Latent Constructs -->
-<!--             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel -->
-<!--             negEmo =~ affAnx + affDepr + affNerv + affExh -->
-<!--             disemp =~ fail01 + fail02 + fail03 -->
-<!--             PFS =~ PFS01 + PFS02 + PFS03 -->
-<!--             wellBe =~ happy + lifeSat + MLQ -->
-<!--             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03 -->
-<!--           # Interactions -->
-<!--             failXposEmo =~ fail01XposEmo01 + fail01XposEmo02 + fail01XposEmo03 + fail01XposEmo04 + fail01XposEmo05 + fail02XposEmo01 + fail02XposEmo02 + fail02XposEmo03 + fail02XposEmo04 + fail02XposEmo05 + fail03XposEmo01 + fail03XposEmo02 + fail03XposEmo03 + fail03XposEmo04 + fail03XposEmo05 -->
-<!--           # Regression -->
-<!--             wellBe ~ d1*posEmo + d2*negEmo + d3*PFS + d4*disemp + d6*failXposEmo' -->
-
-<!-- fit <- sem(model, data = dtCtry, cluster = "coded_country", optim.method = "em", verbose = T, em.iter.max = 20000, em.fx.tol = 1e-08, em.dx.tol = 1e-04) -->
-<!-- summary(fit, fit.measures=TRUE) -->
-<!--  lavaanPlot::lavaanPlot(model = fit, coefs = T, covs = T) -->
-
-<!-- # semTools::plotProbe (probe a latent interaction) https://rdrr.io/cran/semTools/man/plotProbe.html -->
-
-<!-- ``` -->
-
-<!-- ## Longitudinal -->
-<!-- ```{r} -->
-
-<!-- # use growth() from lavaan package with cluster -->
-<!-- ``` -->
 

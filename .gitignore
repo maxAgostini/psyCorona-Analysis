@@ -6,6 +6,7 @@
 *.sav
 *.Rdata
 data/metadata
+tables/
 .DS_Store
 *.csv
 *.pptx
