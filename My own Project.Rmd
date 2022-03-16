@@ -55,7 +55,7 @@ calc_indirect_effect <- function(nameIn, pathA, pathB, varA, varB, covAB, rep, c
 # function to get summary statistics for MLM
 mlm_summary_out <- function(model) {
    
-  CI = lme4::confint.merMod(model, method = "boot", nsim = 10) # increase to 500 for serious run! 
+  CI = lme4::confint.merMod(model, method = "boot", nsim = 30) # increase to 500 for serious run! 
  
    dt <- data.frame(B = lme4::fixef(model),
       SE = summary(model)$coefficients[,2],
@@ -218,7 +218,7 @@ table(dtFullRed$coded_country)
 tmp <- dtFullRed %>%
   dplyr::transmute_at(vars(matches(
     paste(c("affAnx", "affCalm", "affDepr", "affEnerg", "affNerv", "affInsp", "affRel",
-            "affExh", "PFS01", "happy", "lifeSat", "fail01", "c19ProSo03"), collapse = "|"), -contains("DO"))), #vars changed
+            "affExh", "PFS01", "happy", "lifeSat", "c19NormShould", "c19ProSo03"), collapse = "|"), -contains("DO"))), #vars changed
     as.numeric)
 
 # CLOSE YOUR EYES! TRIGGER WARNING! (should have named these variables better...)
@@ -226,73 +226,73 @@ tmp <- tmp %>%
   transmute(
     w00_affAnx = affAnx, w00_affCalm = affCalm, w00_affDepr = affDepr, w00_affEnerg = affEnerg, w00_affNerv = affNerv, 
     w00_affInsp = affInsp, w00_affRel = affRel, w00_affExh = affExh, w00_PFS01 = PFS01, w00_happy = happy, w00_lifeSat = lifeSat,
-    w00_fail01 = fail01, w00_c19ProSo03 = c19ProSo03,
+    w00_c19NormShould = c19NormShould, w00_c19ProSo03 = c19ProSo03,
     w01_affAnx = w1_affAnx, w01_affCalm = w1_affCalm, w01_affDepr = w1_affDepr, w01_affEnerg = w1_affEnerg, 
     w01_affNerv = w1_affNerv, w01_affInsp = w1_affInsp, w01_affRel = w1_affRel, w01_affExh = w1_affExh, w01_PFS01 = w1_PFS01,
-    w01_happy = NA_real_, w01_lifeSat = w1_lifeSat, w01_fail01 = w1_fail01, w01_c19ProSo03 = w1_c19ProSo03,
+    w01_happy = NA_real_, w01_lifeSat = w1_lifeSat, w01_c19NormShould = NA_real_, w01_c19ProSo03 = w1_c19ProSo03,
     w02_affAnx = w2_affAnx, w02_affCalm = w2_affCalm, w02_affDepr = w2_affDepr, w02_affEnerg = w2_affEnerg, 
     w02_affNerv = w2_affNerv, w02_affInsp = w2_affInsp, w02_affRel = w2_affRel, w02_affExh = w2_affExh, w02_PFS01 = w2_PFS01,
-    w02_happy = NA_real_, w02_lifeSat = NA_real_, w02_fail01 = w2_fail01, w02_c19ProSo03 = w2_c19ProSo03,
+    w02_happy = NA_real_, w02_lifeSat = NA_real_, w02_c19NormShould = NA_real_, w02_c19ProSo03 = w2_c19ProSo03,
     w03_affAnx = w3_affAnx, w03_affCalm = w3_affCalm, w03_affDepr = w3_affDepr, w03_affEnerg = w3_affEnerg, 
     w03_affNerv = w3_affNerv, w03_affInsp = w3_affInsp, w03_affRel = w3_affRel, w03_affExh = w3_affExh, w03_PFS01 = w3_PFS01,
-    w03_happy = NA_real_, w03_lifeSat = NA_real_, w03_fail01 = w3_fail01, w03_c19ProSo03 = w3_c19ProSo03,
+    w03_happy = NA_real_, w03_lifeSat = NA_real_, w03_c19NormShould = NA_real_, w03_c19ProSo03 = w3_c19ProSo03,
     w04_affAnx = w4_affAnx, w04_affCalm = w4_affCalm, w04_affDepr = w4_affDepr, w04_affEnerg = w4_affEnerg, 
     w04_affNerv = w4_affNerv, w04_affInsp = w4_affInsp, w04_affRel = w4_affRel, w04_affExh = w4_affExh, w04_PFS01 = w4_PFS01,
-    w04_happy = w4_happy, w04_lifeSat = w4_lifeSat, w04_fail01 = w4_fail01, w04_c19ProSo03 = w4_c19ProSo03,
+    w04_happy = w4_happy, w04_lifeSat = w4_lifeSat, w04_c19NormShould = NA_real_, w04_c19ProSo03 = w4_c19ProSo03,
     w05_affAnx = w5_affAnx, w05_affCalm = w5_affCalm, w05_affDepr = w5_affDepr, w05_affEnerg = w5_affEnerg, 
     w05_affNerv = w5_affNerv, w05_affInsp = w5_affInsp, w05_affRel = w5_affRel, w05_affExh = w5_affExh, w05_PFS01 = w5_PFS01,
-    w05_happy = w5_happy, w05_lifeSat = w5_lifeSat, w05_fail01 = w5_fail01, w05_c19ProSo03 = w5_c19ProSo03,
+    w05_happy = w5_happy, w05_lifeSat = w5_lifeSat, w05_c19NormShould = w5_c19NormShould, w05_c19ProSo03 = w5_c19ProSo03,
     w06_affAnx = w6_affAnx, w06_affCalm = w6_affCalm, w06_affDepr = w6_affDepr, w06_affEnerg = w6_affEnerg, 
     w06_affNerv = w6_affNerv, w06_affInsp = w6_affInsp, w06_affRel = w6_affRel, w06_affExh = w6_affExh, w06_PFS01 = NA_real_,
-    w06_happy = NA_real_, w06_lifeSat = NA_real_, w06_fail01 = NA_real_, w06_c19ProSo03 = w6_c19ProSo03,
+    w06_happy = NA_real_, w06_lifeSat = NA_real_, w06_c19NormShould = NA_real_, w06_c19ProSo03 = w6_c19ProSo03,
     w07_affAnx = w7_affAnx, w07_affCalm = w7_affCalm, w07_affDepr = w7_affDepr, w07_affEnerg = w7_affEnerg, 
     w07_affNerv = w7_affNerv, w07_affInsp = w7_affInsp, w07_affRel = w7_affRel, w07_affExh = w7_affExh, w07_PFS01 = NA_real_,
-    w07_happy = NA_real_, w07_lifeSat = w7_lifeSat, w07_fail01 = NA_real_, w07_c19ProSo03 = w7_c19ProSo03,
+    w07_happy = NA_real_, w07_lifeSat = w7_lifeSat, w07_c19NormShould = NA_real_, w07_c19ProSo03 = w7_c19ProSo03,
     w08_affAnx = w8_affAnx, w08_affCalm = w8_affCalm, w08_affDepr = w8_affDepr, w08_affEnerg = w8_affEnerg, 
     w08_affNerv = w8_affNerv, w08_affInsp = w8_affInsp, w08_affRel = w8_affRel, w08_affExh = w8_affExh, w08_PFS01 = NA_real_,
-    w08_happy = w8_happy, w08_lifeSat = NA_real_, w08_fail01 = NA_real_, w08_c19ProSo03 = w8_c19ProSo03,
+    w08_happy = w8_happy, w08_lifeSat = NA_real_, w08_c19NormShould = NA_real_, w08_c19ProSo03 = w8_c19ProSo03,
     w09_affAnx = w9_affAnx, w09_affCalm = w9_affCalm, w09_affDepr = w9_affDepr, w09_affEnerg = w9_affEnerg, 
     w09_affNerv = w9_affNerv, w09_affInsp = w9_affInsp, w09_affRel = w9_affRel, w09_affExh = w9_affExh, w09_PFS01 = w9_PFS01,
-    w09_happy = w9_happy, w09_lifeSat = NA_real_, w09_fail01 = w9_fail01, w09_c19ProSo03 = w9_c19ProSo03,
+    w09_happy = w9_happy, w09_lifeSat = NA_real_, w09_c19NormShould = w9_c19NormShould, w09_c19ProSo03 = w9_c19ProSo03,
     w10_affAnx = w10_affAnx, w10_affCalm = w10_affCalm, w10_affDepr = w10_affDepr, w10_affEnerg = w10_affEnerg, 
     w10_affNerv = w10_affNerv, w10_affInsp = w10_affInsp, w10_affRel = w10_affRel, w10_affExh = w10_affExh, w10_PFS01 = NA_real_,
-    w10_happy = NA_real_, w10_lifeSat = NA_real_, w10_fail01 = NA_real_, w10_c19ProSo03 = w10_c19ProSo03,
+    w10_happy = NA_real_, w10_lifeSat = NA_real_, w10_c19NormShould = NA_real_, w10_c19ProSo03 = w10_c19ProSo03,
     w11_affAnx = w11_affAnx, w11_affCalm = w11_affCalm, w11_affDepr = w11_affDepr, w11_affEnerg = w11_affEnerg, 
     w11_affNerv = w11_affNerv, w11_affInsp = w11_affInsp, w11_affRel = w11_affRel, w11_affExh = w11_affExh, w11_PFS01 = w11_PFS01,
-    w11_happy = w11_happy, w11_lifeSat = w11_lifeSat, w11_fail01 = w11_fail01, w11_c19ProSo03 = w11_c19ProSo03,
+    w11_happy = w11_happy, w11_lifeSat = w11_lifeSat, w11_c19NormShould = w11_c19NormShould, w11_c19ProSo03 = w11_c19ProSo03,
     w12_affAnx = w12_affAnx, w12_affCalm = w12_affCalm, w12_affDepr = w12_affDepr, w12_affEnerg = w12_affEnerg, 
     w12_affNerv = w12_affNerv, w12_affInsp = w12_affInsp, w12_affRel = w12_affRel, w12_affExh = w12_affExh, w12_PFS01 = w12_PFS01,
-    w12_happy = w12_happy, w12_lifeSat = w12_lifeSat, w12_fail01 = w12_fail01, w12_c19ProSo03 = w12_c19ProSo03,
+    w12_happy = w12_happy, w12_lifeSat = w12_lifeSat, w12_c19NormShould = w12_c19NormShould, w12_c19ProSo03 = w12_c19ProSo03,
     w13_affAnx = w13_affAnx, w13_affCalm = w13_affCalm, w13_affDepr = w13_affDepr, w13_affEnerg = w13_affEnerg, 
     w13_affNerv = w13_affNerv, w13_affInsp = w13_affInsp, w13_affRel = w13_affRel, w13_affExh = w13_affExh, w13_PFS01 = w13_PFS01,
-    w13_happy = w13_happy, w13_lifeSat = w13_lifeSat, w13_fail01 = w13_fail01, w13_c19ProSo03 = w13_c19ProSo03,
+    w13_happy = w13_happy, w13_lifeSat = w13_lifeSat, w13_c19NormShould = w13_c19NormShould, w13_c19ProSo03 = w13_c19ProSo03,
     w14_affAnx = w14_affAnx, w14_affCalm = w14_affCalm, w14_affDepr = w14_affDepr, w14_affEnerg = w14_affEnerg, 
     w14_affNerv = w14_affNerv, w14_affInsp = w14_affInsp, w14_affRel = w14_affRel, w14_affExh = w14_affExh, w14_PFS01 = w14_PFS01,
-    w14_happy = w14_happy, w14_lifeSat = w14_lifeSat, w14_fail01 = w14_fail01, w14_c19ProSo03 = w14_c19ProSo03,
+    w14_happy = w14_happy, w14_lifeSat = w14_lifeSat, w14_c19NormShould = w14_c19NormShould, w14_c19ProSo03 = w14_c19ProSo03,
     w15_affAnx = w15_affAnx, w15_affCalm = w15_affCalm, w15_affDepr = w15_affDepr, w15_affEnerg = w15_affEnerg, 
     w15_affNerv = w15_affNerv, w15_affInsp = w15_affInsp, w15_affRel = w15_affRel, w15_affExh = w15_affExh, w15_PFS01 = w15_PFS01,
-    w15_happy = w15_happy, w15_lifeSat = w15_lifeSat, w15_fail01 = w15_fail01, w15_c19ProSo03 = w15_c19ProSo03,
+    w15_happy = w15_happy, w15_lifeSat = w15_lifeSat, w15_c19NormShould = w15_c19NormShould, w15_c19ProSo03 = w15_c19ProSo03,
     w16_affAnx = w16_affAnx, w16_affCalm = w16_affCalm, w16_affDepr = w16_affDepr, w16_affEnerg = w16_affEnerg, 
     w16_affNerv = w16_affNerv, w16_affInsp = w16_affInsp, w16_affRel = w16_affRel, w16_affExh = w16_affExh, w16_PFS01 = w16_PFS01,
-    w16_happy = w16_happy, w16_lifeSat = w16_lifeSat, w16_fail01 = w16_fail01, w16_c19ProSo03 = w16_c19ProSo03,
+    w16_happy = w16_happy, w16_lifeSat = w16_lifeSat, w16_c19NormShould = w16_c19NormShould, w16_c19ProSo03 = w16_c19ProSo03,
     w17_affAnx = w17_affAnx, w17_affCalm = w17_affCalm, w17_affDepr = w17_affDepr, w17_affEnerg = w17_affEnerg, 
     w17_affNerv = w17_affNerv, w17_affInsp = w17_affInsp, w17_affRel = w17_affRel, w17_affExh = w17_affExh, w17_PFS01 = w17_PFS01,
-    w17_happy = w17_happy, w17_lifeSat = NA_real_, w17_fail01 = w17_fail01, w17_c19ProSo03 = w17_c19ProSo03,
+    w17_happy = w17_happy, w17_lifeSat = NA_real_, w17_c19NormShould = w17_c19NormShould, w17_c19ProSo03 = w17_c19ProSo03,
     w18_affAnx = w18_affAnx, w18_affCalm = w18_affCalm, w18_affDepr = w18_affDepr, w18_affEnerg = w18_affEnerg, 
     w18_affNerv = w18_affNerv, w18_affInsp = w18_affInsp, w18_affRel = w18_affRel, w18_affExh = w18_affExh, w18_PFS01 = w18_PFS01,
-    w18_happy = w18_happy, w18_lifeSat = NA_real_, w18_fail01 = w18_fail01, w18_c19ProSo03 = w18_c19ProSo03,
+    w18_happy = w18_happy, w18_lifeSat = NA_real_, w18_c19NormShould = w18_c19NormShould, w18_c19ProSo03 = w18_c19ProSo03,
     w19_affAnx = w19_affAnx, w19_affCalm = w19_affCalm, w19_affDepr = w19_affDepr, w19_affEnerg = w19_affEnerg, 
     w19_affNerv = w19_affNerv, w19_affInsp = w19_affInsp, w19_affRel = w19_affRel, w19_affExh = w19_affExh, w19_PFS01 = w19_PFS01,
-    w19_happy = w19_happy, w19_lifeSat = NA_real_, w19_fail01 = w19_fail01, w19_c19ProSo03 = w19_c19ProSo03,
+    w19_happy = w19_happy, w19_lifeSat = NA_real_, w19_c19NormShould = w19_c19NormShould, w19_c19ProSo03 = w19_c19ProSo03,
     w20_affAnx = w20_affAnx, w20_affCalm = w20_affCalm, w20_affDepr = w20_affDepr, w20_affEnerg = w20_affEnerg, 
     w20_affNerv = w20_affNerv, w20_affInsp = w20_affInsp, w20_affRel = w20_affRel, w20_affExh = w20_affExh, w20_PFS01 = w20_PFS01,
-    w20_happy = w20_happy, w20_lifeSat = w20_lifeSat, w20_fail01 = w20_fail01, w20_c19ProSo03 = w20_c19ProSo03,
+    w20_happy = w20_happy, w20_lifeSat = w20_lifeSat, w20_c19NormShould = w20_c19NormShould, w20_c19ProSo03 = w20_c19ProSo03,
     w21_affAnx = w21_affAnx, w21_affCalm = w21_affCalm, w21_affDepr = w21_affDepr, w21_affEnerg = w21_affEnerg, 
     w21_affNerv = w21_affNerv, w21_affInsp = w21_affInsp, w21_affRel = w21_affRel, w21_affExh = w21_affExh, w21_PFS01 = w21_PFS01,
-    w21_happy = w21_happy, w21_lifeSat = w21_lifeSat, w21_fail01 = w21_fail01, w21_c19ProSo03 = w21_c19ProSo03,
+    w21_happy = w21_happy, w21_lifeSat = w21_lifeSat, w21_c19NormShould = w21_c19NormShould, w21_c19ProSo03 = w21_c19ProSo03,
     w22_affAnx = w22_affAnx, w22_affCalm = w22_affCalm, w22_affDepr = w22_affDepr, w22_affEnerg = w22_affEnerg, 
     w22_affNerv = w22_affNerv, w22_affInsp = w22_affInsp, w22_affRel = w22_affRel, w22_affExh = w22_affExh, w22_PFS01 = w22_PFS01,
-    w22_happy = w22_happy, w22_lifeSat = w22_lifeSat, w22_fail01 = w22_fail01, w22_c19ProSo03 = w22_c19ProSo03
+    w22_happy = w22_happy, w22_lifeSat = w22_lifeSat, w22_c19NormShould = w22_c19NormShould, w22_c19ProSo03 = w22_c19ProSo03
     )
 
 tmp$PPID <- dtFullRed$PPID
@@ -314,7 +314,7 @@ dtLong <- data.table::melt.data.table(
     PFS01 = "PFS01",
     happy = "happy",
     lifeSat = "lifeSat",
-    fail01 = "fail01", 
+    c19NormShould = "c19NormShould", 
     # c19ProSo01 = "c19ProSo01",
     c19ProSo03 = "c19ProSo03"),
   variable.name = "wave"
@@ -445,8 +445,8 @@ dtLong <- dtLong %>%
     posEmo_sd = sd(posEmo, na.rm = T),
     PFS01_mean = mean(PFS01, na.rm = T),
     PFS01_sd = sd(PFS01, na.rm = T),
-    fail01_mean = mean(fail01, na.rm = T),
-    fail01_sd = sd(fail01, na.rm = T),
+    c19NormShould_mean = mean(c19NormShould, na.rm = T),
+    c19NormShould_sd = sd(c19NormShould, na.rm = T),
     happy_mean = mean(happy, na.rm = T),
     happy_sd = sd(happy, na.rm = T),
     c19ProSo03_mean = mean(c19ProSo03, na.rm = T),
@@ -464,8 +464,8 @@ dtLong <- dtLong %>%
     posEmoCoutry_sd = sd(posEmo_mean, na.rm = T),
     PFS01Country_mean = mean(PFS01_mean, na.rm = T),
     PFS01Country_sd = sd(PFS01_mean, na.rm = T),
-    fail01Country_mean = mean(fail01_mean, na.rm = T),
-    fail01Country_sd = sd(fail01_mean, na.rm = T),
+    c19NormShouldCountry_mean = mean(c19NormShould_mean, na.rm = T),
+    c19NormShouldCountry_sd = sd(c19NormShould_mean, na.rm = T),
     happyCountry_mean = mean(happy_mean, na.rm = T),
     happyCountry_sd = sd(happy_mean, na.rm = T),
     c19ProSo03Country_mean = mean(c19ProSo03_mean, na.rm = T),
@@ -480,32 +480,32 @@ dtLong <- dtLong %>%
   mutate(
     negEmoCtry_c = scale(negEmoCountry_mean, center = T, scale = F),
     posEmoCtry_c = scale(posEmoCountry_mean, center = T, scale = F),
-    disempCtry_c = scale(fail01Country_mean, center = T, scale = F),
+    c19NormShouldCtry_c = scale(c19NormShouldCountry_mean, center = T, scale = F),
     PFSCtry_c = scale(PFS01Country_mean, center = T, scale = F),
     WBCtry_c = scale(happyCountry_mean, center = T, scale = F),
     negEmoPP_c = scale(negEmo_mean, center = T, scale = F),
     posEmoPP_c = scale(posEmo_mean, center = T, scale = F),
-    disempPP_c = scale(fail01_mean, center = T, scale = F),
+    c19NormShouldPP_c = scale(c19NormShould_mean, center = T, scale = F),
     PFSPP_c = scale(PFS01_mean, center = T, scale = F),
     WBPP_c = scale(happy_mean, center = T, scale = F),
     negEmo_c = scale(negEmo, center = T, scale = F),
     posEmo_c = scale(posEmo, center = T, scale = F),
-    disemp_c = scale(fail01, center = T, scale = F),
+    c19NormShould_c = scale(c19NormShould, center = T, scale = F),
     PFS_c = scale(PFS01, center = T, scale = F),
     WB_c = scale(happy, center = T, scale = F),
     negEmo_cw = negEmo-negEmo_mean,
     posEmo_cw = posEmo-posEmo_mean,
-    disemp_cw = fail01-fail01_mean,
+    c19NormShould_cw = c19NormShould-c19NormShould_mean,
     PFS_cw = PFS01 - PFS01_mean,
     WB_cw = happy-happy_mean,
     negEmoPP_cw = negEmo_mean-negEmoCountry_mean,
     posEmoPP_cw = posEmo_mean-posEmoCountry_mean,
-    disempPP_cw = fail01_mean-fail01Country_mean,
+    c19NormShouldPP_cw = c19NormShould_mean-c19NormShouldCountry_mean,
     PFSPP_cw =  PFS01_mean-happyCountry_mean,
     WBPP_cw = happy_mean-mean(happy_mean, na.rm = T),
     negEmoCtry_cw = negEmoCountry_mean-mean(negEmoCountry_mean, na.rm = T),
     posEmoCtry_cw = posEmoCountry_mean-mean(posEmoCountry_mean, na.rm = T),
-    disempCtry_cw = fail01Country_mean-mean(fail01Country_mean, na.rm = T),
+    c19NormShouldCtry_cw = c19NormShouldCountry_mean-mean(c19NormShouldCountry_mean, na.rm = T),
     PFSCtry_cw =  PFS01Country_mean-mean(PFS01Country_mean, na.rm = T),
     WBCtry_cw = happyCountry_mean-mean(happyCountry_mean, na.rm = T),
     WB = happy,
@@ -551,7 +551,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +
+ana_lv1 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -574,7 +574,7 @@ autocorrelation; rm(saveRes, autocorrelation, var_ana_lv0, var_ana_lv1)
 
 Third step: Add all level 1 predictors and their interactions
 ```{r}
-ana_lv1_int <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw +
+ana_lv1_int <- lme4::lmer(WB ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -598,8 +598,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + 
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw +
+ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + 
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + c19NormShouldPP_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -621,8 +621,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 ```
 
 ```{r}
-ana_lv12_int <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +
+ana_lv12_int <- lme4::lmer(WB ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + 
+                             negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -645,20 +645,20 @@ autocorrelation; rm(saveRes, autocorrelation)
 # interactiosn
 # sjPlot::plot_model(ana_lv12_int, type = "int", mdrt.values = "meansd")
 # 
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFS_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "posEmo_cw", modx = "c19NormShould_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "negEmo_cw", modx = "c19NormShould_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "PFS_cw", modx = "c19NormShould_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_cw", modx = "c19NormShouldPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_cw", modx = "c19NormShouldPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_cw", modx = "c19NormShouldPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 
 ```
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + 
-                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + 
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw +
+ana_lv123 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + 
+                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw + c19NormShouldPP_cw + 
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -680,9 +680,9 @@ autocorrelation; rm(saveRes, autocorrelation)
 ```
 
 ```{r}
-ana_lv123_int <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                              negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +
-                      negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +
+ana_lv123_int <- lme4::lmer(WB ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + 
+                              negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw +
+                      negEmoCtry_cw*c19NormShouldCtry_cw + posEmoCtry_cw*c19NormShouldCtry_cw + PFSCtry_cw*c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -705,18 +705,18 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 #### cross-level interactions (1,2)
 ```{r}
-ana_lv123_intCrossAll <- lme4::lmer(WB ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +  
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +
+ana_lv123_intCrossAll <- lme4::lmer(WB ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + 
+                             negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw +  
+                             negEmo_cw*c19NormShouldPP_cw + posEmo_cw*c19NormShouldPP_cw + PFS_cw*c19NormShouldPP_cw +  
+                             negEmoCtry_cw*c19NormShouldCtry_cw + posEmoCtry_cw*c19NormShouldCtry_cw + PFSCtry_cw*c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
 
-ana_lv123_intCrossOnly <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +
-                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  disempPP_cw +
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw +
+ana_lv123_intCrossOnly <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw +
+                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  c19NormShouldPP_cw +
+                             negEmo_cw*c19NormShouldPP_cw + posEmo_cw*c19NormShouldPP_cw + PFS_cw*c19NormShouldPP_cw +  
+                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -741,33 +741,33 @@ performance::icc(ana_lv123_intCrossOnly)
 #### understand interactions
 ```{r}
 # positive emotions (we save path A for later); important for indirect effects as well
-tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disemp_cw", 
+tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "c19NormShould_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disemp_cw", 
+tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "c19NormShould_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disemp_cw", 
+tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "c19NormShould_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", 
+tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_posEmoPP
-tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "disempPP_cw", 
+tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "disempPP_cw", 
+tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_PFSPP
-tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
+tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_posEmoCross
-tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
+tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
+tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_PFSCross
-tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
+tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "c19NormShouldCtry_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
+tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "c19NormShouldCtry_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "disempCtry_cw", 
+tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "c19NormShouldCtry_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
@@ -780,54 +780,54 @@ Selig, J. P., & Preacher, K. J. (2008, June). Monte Carlo method for assessing m
 
 ```{r}
 paths_WB <- data.frame(
-  posEmo_plus1DisempSD_A = tmp_posEmo$slopes$Est.[1],
-  posEmo_plus1DisempSD_varA = tmp_posEmo$slopes$S.E.[1],
-  posEmo_minus1DisempSD_A = tmp_posEmo$slopes$Est.[3],
-  posEmo_minus1DisempSD_varA = tmp_posEmo$slopes$S.E.[3],
-  negEmo_plus1DisempSD_A = tmp_negEmo$slopes$Est.[1],
-  negEmo_plus1DisempSD_varA = tmp_negEmo$slopes$S.E.[1],
-  negEmo_minus1DisempSD_A = tmp_negEmo$slopes$Est.[3],
-  negEmo_minus1DisempSD_varA = tmp_negEmo$slopes$S.E.[3],
-  PFS_plus1DisempSD_A = tmp_PFS$slopes$Est.[1],
-  PFS_plus1DisempSD_varA = tmp_PFS$slopes$S.E.[1],
-  PFS_minus1DisempSD_A = tmp_PFS$slopes$Est.[3],
-  PFS_minus1DisempSD_varA = tmp_PFS$slopes$S.E.[3],
-  posEmoPP_plus1DisempSD_A = tmp_posEmoPP$slopes$Est.[1],
-  posEmoPP_plus1DisempSD_varA = tmp_posEmoPP$slopes$S.E.[1],
-  posEmoPP_minus1DisempSD_A = tmp_posEmoPP$slopes$Est.[3],
-  posEmoPP_minus1DisempSD_varA = tmp_posEmoPP$slopes$S.E.[3],
-  negEmoPP_plus1DisempSD_A = tmp_negEmoPP$slopes$Est.[1],
-  negEmoPP_plus1DisempSD_varA = tmp_negEmoPP$slopes$S.E.[1],
-  negEmoPP_minus1DisempSD_A = tmp_negEmoPP$slopes$Est.[3],
-  negEmoPP_minus1DisempSD_varA = tmp_negEmoPP$slopes$S.E.[3],
-  PFSPP_plus1DisempSD_A = tmp_PFSPP$slopes$Est.[1],
-  PFSPP_plus1DisempSD_varA = tmp_PFSPP$slopes$S.E.[1],
-  PFSPP_minus1DisempSD_A = tmp_PFSPP$slopes$Est.[3],
-  PFSPP_minus1DisempSD_varA = tmp_PFSPP$slopes$S.E.[3],
-  posEmoCross_plus1DisempSD_A = tmp_posEmoCross$slopes$Est.[1],
-  posEmoCross_plus1DisempSD_varA = tmp_posEmoCross$slopes$S.E.[1],
-  posEmoCross_minus1DisempSD_A = tmp_posEmoCross$slopes$Est.[3],
-  posEmoCross_minus1DisempSD_varA = tmp_posEmoCross$slopes$S.E.[3],
-  negEmoCross_plus1DisempSD_A = tmp_negEmoCross$slopes$Est.[1],
-  negEmoCross_plus1DisempSD_varA = tmp_negEmoCross$slopes$S.E.[1],
-  negEmoCross_minus1DisempSD_A = tmp_negEmoCross$slopes$Est.[3],
-  negEmoCross_minus1DisempSD_varA = tmp_negEmoCross$slopes$S.E.[3],
-  PFSCross_plus1DisempSD_A = tmp_PFSCross$slopes$Est.[1],
-  PFSCross_plus1DisempSD_varA = tmp_PFSCross$slopes$S.E.[1],
-  PFSCross_minus1DisempSD_A = tmp_PFSCross$slopes$Est.[3],
-  PFSCross_minus1DisempSD_varA = tmp_PFSCross$slopes$S.E.[3],
-  posEmoCtry_plus1DisempSD_A = tmp_posEmoCtry$slopes$Est.[1],
-  posEmoCtry_plus1DisempSD_varA = tmp_posEmoCtry$slopes$S.E.[1],
-  posEmoCtry_minus1DisempSD_A = tmp_posEmoCtry$slopes$Est.[3],
-  posEmoCtry_minus1DisempSD_varA = tmp_posEmoCtry$slopes$S.E.[3],
-  negEmoCtry_plus1DisempSD_A = tmp_negEmoCtry$slopes$Est.[1],
-  negEmoCtry_plus1DisempSD_varA = tmp_negEmoCtry$slopes$S.E.[1],
-  negEmoCtry_minus1DisempSD_A = tmp_negEmoCtry$slopes$Est.[3],
-  negEmoCtry_minus1DisempSD_varA = tmp_negEmoCtry$slopes$S.E.[3],
-  PFSCtry_plus1DisempSD_A = tmp_PFSCtry$slopes$Est.[1],
-  PFSCtry_plus1DisempSD_varA = tmp_PFSCtry$slopes$S.E.[1],
-  PFSCtry_minus1DisempSD_A = tmp_PFSCtry$slopes$Est.[3],
-  PFSCtry_minus1DisempSD_varA = tmp_PFSCtry$slopes$S.E.[3]
+  posEmo_plus1c19NormShouldSD_A = tmp_posEmo$slopes$Est.[1],
+  posEmo_plus1c19NormShouldSD_varA = tmp_posEmo$slopes$S.E.[1],
+  posEmo_minus1c19NormShouldSD_A = tmp_posEmo$slopes$Est.[3],
+  posEmo_minus1c19NormShouldSD_varA = tmp_posEmo$slopes$S.E.[3],
+  negEmo_plus1c19NormShouldSD_A = tmp_negEmo$slopes$Est.[1],
+  negEmo_plus1c19NormShouldSD_varA = tmp_negEmo$slopes$S.E.[1],
+  negEmo_minus1c19NormShouldSD_A = tmp_negEmo$slopes$Est.[3],
+  negEmo_minus1c19NormShouldSD_varA = tmp_negEmo$slopes$S.E.[3],
+  PFS_plus1c19NormShouldSD_A = tmp_PFS$slopes$Est.[1],
+  PFS_plus1c19NormShouldSD_varA = tmp_PFS$slopes$S.E.[1],
+  PFS_minus1c19NormShouldSD_A = tmp_PFS$slopes$Est.[3],
+  PFS_minus1c19NormShouldSD_varA = tmp_PFS$slopes$S.E.[3],
+  posEmoPP_plus1c19NormShouldSD_A = tmp_posEmoPP$slopes$Est.[1],
+  posEmoPP_plus1c19NormShouldSD_varA = tmp_posEmoPP$slopes$S.E.[1],
+  posEmoPP_minus1c19NormShouldSD_A = tmp_posEmoPP$slopes$Est.[3],
+  posEmoPP_minus1c19NormShouldSD_varA = tmp_posEmoPP$slopes$S.E.[3],
+  negEmoPP_plus1c19NormShouldSD_A = tmp_negEmoPP$slopes$Est.[1],
+  negEmoPP_plus1c19NormShouldSD_varA = tmp_negEmoPP$slopes$S.E.[1],
+  negEmoPP_minus1c19NormShouldSD_A = tmp_negEmoPP$slopes$Est.[3],
+  negEmoPP_minus1c19NormShouldSD_varA = tmp_negEmoPP$slopes$S.E.[3],
+  PFSPP_plus1c19NormShouldSD_A = tmp_PFSPP$slopes$Est.[1],
+  PFSPP_plus1c19NormShouldSD_varA = tmp_PFSPP$slopes$S.E.[1],
+  PFSPP_minus1c19NormShouldSD_A = tmp_PFSPP$slopes$Est.[3],
+  PFSPP_minus1c19NormShouldSD_varA = tmp_PFSPP$slopes$S.E.[3],
+  posEmoCross_plus1c19NormShouldSD_A = tmp_posEmoCross$slopes$Est.[1],
+  posEmoCross_plus1c19NormShouldSD_varA = tmp_posEmoCross$slopes$S.E.[1],
+  posEmoCross_minus1c19NormShouldSD_A = tmp_posEmoCross$slopes$Est.[3],
+  posEmoCross_minus1c19NormShouldSD_varA = tmp_posEmoCross$slopes$S.E.[3],
+  negEmoCross_plus1c19NormShouldSD_A = tmp_negEmoCross$slopes$Est.[1],
+  negEmoCross_plus1c19NormShouldSD_varA = tmp_negEmoCross$slopes$S.E.[1],
+  negEmoCross_minus1c19NormShouldSD_A = tmp_negEmoCross$slopes$Est.[3],
+  negEmoCross_minus1c19NormShouldSD_varA = tmp_negEmoCross$slopes$S.E.[3],
+  PFSCross_plus1c19NormShouldSD_A = tmp_PFSCross$slopes$Est.[1],
+  PFSCross_plus1c19NormShouldSD_varA = tmp_PFSCross$slopes$S.E.[1],
+  PFSCross_minus1c19NormShouldSD_A = tmp_PFSCross$slopes$Est.[3],
+  PFSCross_minus1c19NormShouldSD_varA = tmp_PFSCross$slopes$S.E.[3],
+  posEmoCtry_plus1c19NormShouldSD_A = tmp_posEmoCtry$slopes$Est.[1],
+  posEmoCtry_plus1c19NormShouldSD_varA = tmp_posEmoCtry$slopes$S.E.[1],
+  posEmoCtry_minus1c19NormShouldSD_A = tmp_posEmoCtry$slopes$Est.[3],
+  posEmoCtry_minus1c19NormShouldSD_varA = tmp_posEmoCtry$slopes$S.E.[3],
+  negEmoCtry_plus1c19NormShouldSD_A = tmp_negEmoCtry$slopes$Est.[1],
+  negEmoCtry_plus1c19NormShouldSD_varA = tmp_negEmoCtry$slopes$S.E.[1],
+  negEmoCtry_minus1c19NormShouldSD_A = tmp_negEmoCtry$slopes$Est.[3],
+  negEmoCtry_minus1c19NormShouldSD_varA = tmp_negEmoCtry$slopes$S.E.[3],
+  PFSCtry_plus1c19NormShouldSD_A = tmp_PFSCtry$slopes$Est.[1],
+  PFSCtry_plus1c19NormShouldSD_varA = tmp_PFSCtry$slopes$S.E.[1],
+  PFSCtry_minus1c19NormShouldSD_A = tmp_PFSCtry$slopes$Est.[3],
+  PFSCtry_minus1c19NormShouldSD_varA = tmp_PFSCtry$slopes$S.E.[3]
 )
 
 rm(list=ls(pattern="^tmp"))
@@ -850,7 +850,7 @@ rm(list=ls(pattern="^tmp"))
                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int",
                                   "level 1-3+crossIntAll", "level 1-3+crossIntOnly"),
                 dep.var.labels = c("Well-Being"),
-                out="output/tables/WB_CW.html")
+                out="output/tables/Longitudinal/Norms/WB_CW.html")
 
 # stargazer::stargazer(ana_lv123_intCrossAll,
 #                 summary=FALSE,
@@ -869,7 +869,7 @@ rm(list=ls(pattern="^tmp"))
 WB_cw_out <- mlm_summary_out(ana_lv123_intCrossAll)
 
 stargazer::stargazer(WB_cw_out, 
-                     out="output/tables/WB_CW_relOnly.html",
+                     out="output/tables/Longitudinal/Norms/WB_CW_relOnly.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -912,7 +912,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + 
+ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -935,7 +935,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 Third step: Add all level 1 predictors and their interactions
 ```{r}
-ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
+ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -959,8 +959,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +  
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + 
+ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw +  
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + c19NormShouldPP_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -982,8 +982,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 ```
 
 ```{r}
-ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +  
+ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + 
+                             negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw +  
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1006,20 +1006,20 @@ autocorrelation; rm(saveRes, autocorrelation)
 # interactiosn
 # sjPlot::plot_model(ana_lv12_int, type = "int", mdrt.values = "meansd")
 # 
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmo_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFS_cw", modx = "disemp_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_cw", modx = "disempPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "posEmo_cw", modx = "c19NormShould_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "negEmo_cw", modx = "c19NormShould_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "PFS_cw", modx = "c19NormShould_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "posEmoPP_cw", modx = "c19NormShouldPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "negEmoPP_cw", modx = "c19NormShouldPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv12_int, pred = "PFSPP_cw", modx = "c19NormShouldPP_cw", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +  
-                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + 
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw + 
+ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw +  
+                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + c19NormShouldPP_cw + 
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + c19NormShouldCtry_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1041,9 +1041,9 @@ autocorrelation; rm(saveRes, autocorrelation)
 ```
 
 ```{r}
-ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw +  
-                      negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + 
-                      negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +  
+ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw +  
+                      negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw + 
+                      negEmoCtry_cw*c19NormShouldCtry_cw + posEmoCtry_cw*c19NormShouldCtry_cw + PFSCtry_cw*c19NormShouldCtry_cw +  
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1066,18 +1066,18 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 #### cross-level interactions (1,2)
 ```{r}
-ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw +  
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw +
+ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + 
+                             negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw +  
+                             negEmo_cw*c19NormShouldPP_cw + posEmo_cw*c19NormShouldPP_cw + PFS_cw*c19NormShouldPP_cw +  
+                             negEmoCtry_cw*c19NormShouldCtry_cw + posEmoCtry_cw*c19NormShouldCtry_cw + PFSCtry_cw*c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
 
-ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw +
-                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  disempPP_cw +
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw +  
-                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw +
+ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw +
+                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  c19NormShouldPP_cw +
+                             negEmo_cw*c19NormShouldPP_cw + posEmo_cw*c19NormShouldPP_cw + PFS_cw*c19NormShouldPP_cw +  
+                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1102,12 +1102,12 @@ performance::icc(ana_lv123_intCrossOnly)
 # interactiosn
 # sjPlot::plot_model(ana_lv123_intCross, type = "int", mdrt.values = "meansd")
 # 
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "disemp_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "disempPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmo_c", modx = "c19NormShould_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmo_c", modx = "c19NormShould_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv123_intCross, pred = "PFS_c", modx = "c19NormShould_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv123_intCross, pred = "posEmoPP_c", modx = "c19NormShouldPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv123_intCross, pred = "negEmoPP_c", modx = "c19NormShouldPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
+# interactions::sim_slopes(ana_lv123_intCross, pred = "PFSPP_c", modx = "c19NormShouldPP_c", johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
 #### save tables
@@ -1125,7 +1125,7 @@ performance::icc(ana_lv123_intCrossOnly)
                 title='ProSocial Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
                 dep.var.labels = c("ProSocial"),
-                out="output/tables/proSo_noWellBeing_CW.html")
+                out="output/tables/Longitudinal/Norms/proSo_noWellBeing_CW.html")
 
 stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, 
                       ana_lv123_intCrossAll, ana_lv123_intCrossOnly,
@@ -1140,12 +1140,12 @@ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_
                 title='ProSocial Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
                 dep.var.labels = c("ProSocial"),
-                out="output/tables/proSo_noWellBeing_CW.html")
+                out="output/tables/Longitudinal/Norms/proSo_noWellBeing_CW.html")
 
 proSo_noWellBeing_CW_out <- mlm_summary_out(ana_lv123_intCrossAll)
 
 stargazer::stargazer(proSo_noWellBeing_CW_out, 
-                     out="output/tables/proSo_noWellBeing_CW_relOnly.html",
+                     out="output/tables/Longitudinal/Norms/proSo_noWellBeing_CW_relOnly.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -1188,7 +1188,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw +
+ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + WB_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1211,7 +1211,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 Third step: Add all level 1 predictors and their interactions
 ```{r}
-ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw +
+ana_lv1_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + WB_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1235,8 +1235,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw + 
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + WBPP_cw +
+ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + WB_cw + 
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + c19NormShouldPP_cw + WBPP_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1258,8 +1258,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 ```
 
 ```{r}
-ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw*disemp_cw + 
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + WBPP_cw*disempPP_cw + 
+ana_lv12_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + WB_cw*c19NormShould_cw + 
+                             negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw + WBPP_cw*c19NormShouldPP_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1283,9 +1283,9 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw + 
-                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + disempPP_cw + WBPP_cw +
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw + WBCtry_cw +
+ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + WB_cw + 
+                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + c19NormShouldPP_cw + WBPP_cw +
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + c19NormShouldCtry_cw + WBCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1307,9 +1307,9 @@ autocorrelation; rm(saveRes, autocorrelation)
 ```
 
 ```{r}
-ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw*disemp_cw + 
-                      negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + WBPP_cw*disempPP_cw + 
-                      negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw + WBCtry_cw*disempCtry_cw + 
+ana_lv123_int <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + WB_cw*c19NormShould_cw + 
+                      negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw + WBPP_cw*c19NormShouldPP_cw + 
+                      negEmoCtry_cw*c19NormShouldCtry_cw + posEmoCtry_cw*c19NormShouldCtry_cw + PFSCtry_cw*c19NormShouldCtry_cw + WBCtry_cw*c19NormShouldCtry_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1332,18 +1332,18 @@ autocorrelation; rm(saveRes, autocorrelation)
 
 #### cross-level interactions (1,2)
 ```{r}
-ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_cw*disemp_cw + posEmo_cw*disemp_cw + PFS_cw*disemp_cw + WB_cw*disemp_cw +
-                             negEmoPP_cw*disempPP_cw + posEmoPP_cw*disempPP_cw + PFSPP_cw*disempPP_cw + WBPP_cw*disempPP_cw + 
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw + WB_cw*disempPP_cw + 
-                             negEmoCtry_cw*disempCtry_cw + posEmoCtry_cw*disempCtry_cw + PFSCtry_cw*disempCtry_cw + WBCtry_cw*disempCtry_cw +
+ana_lv123_intCrossAll <- lme4::lmer(c19ProSo03 ~ negEmo_cw*c19NormShould_cw + posEmo_cw*c19NormShould_cw + PFS_cw*c19NormShould_cw + WB_cw*c19NormShould_cw +
+                             negEmoPP_cw*c19NormShouldPP_cw + posEmoPP_cw*c19NormShouldPP_cw + PFSPP_cw*c19NormShouldPP_cw + WBPP_cw*c19NormShouldPP_cw + 
+                             negEmo_cw*c19NormShouldPP_cw + posEmo_cw*c19NormShouldPP_cw + PFS_cw*c19NormShouldPP_cw + WB_cw*c19NormShouldPP_cw + 
+                             negEmoCtry_cw*c19NormShouldCtry_cw + posEmoCtry_cw*c19NormShouldCtry_cw + PFSCtry_cw*c19NormShouldCtry_cw + WBCtry_cw*c19NormShouldCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
 
-ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + disemp_cw + WB_cw +
-                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  disempPP_cw + WBPP_cw +
-                             negEmo_cw*disempPP_cw + posEmo_cw*disempPP_cw + PFS_cw*disempPP_cw + WB_cw*disempPP_cw +   
-                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + disempCtry_cw + WBCtry_cw +
+ana_lv123_intCrossOnly <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + c19NormShould_cw + WB_cw +
+                             negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  c19NormShouldPP_cw + WBPP_cw +
+                             negEmo_cw*c19NormShouldPP_cw + posEmo_cw*c19NormShouldPP_cw + PFS_cw*c19NormShouldPP_cw + WB_cw*c19NormShouldPP_cw +   
+                             negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + c19NormShouldCtry_cw + WBCtry_cw +
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1370,35 +1370,35 @@ performance::icc(ana_lv123_intCrossOnly)
 #### understand interactions
 ```{r}
 # positive emotions (we save path A for later); important for indirect effects as well
-# tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disemp_cw", 
+# tmp_posEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "c19NormShould_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disemp_cw", 
+# tmp_negEmo <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "c19NormShould_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disemp_cw", 
+# tmp_PFS <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "c19NormShould_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "disempPP_cw", 
+# tmp_posEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoPP_cw", modx = "c19NormShouldPP_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "disempPP_cw", 
+# tmp_negEmoPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoPP_cw", modx = "c19NormShouldPP_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "disempPP_cw", 
+tmp_PFSPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSPP_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_PFSPP
-tmp_WBPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "WBPP_cw", modx = "disempPP_cw", 
+tmp_WBPP <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "WBPP_cw", modx = "c19NormShouldPP_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_WBPP
-# tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "disempPP_cw", 
+# tmp_posEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmo_cw", modx = "c19NormShouldPP_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "disempPP_cw", 
+# tmp_negEmoCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmo_cw", modx = "c19NormShouldPP_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 # tmp_negEmoCross
-# tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "disempPP_cw", 
+# tmp_PFSCross <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFS_cw", modx = "c19NormShouldPP_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-# tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "disempCtry_cw", 
+# tmp_posEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "posEmoCtry_cw", modx = "c19NormShouldCtry_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
-tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "disempCtry_cw", 
+tmp_negEmoCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "negEmoCtry_cw", modx = "c19NormShouldCtry_cw", 
                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 tmp_negEmoCtry
-# tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "disempCtry_cw", 
+# tmp_PFSCtry <- interactions::sim_slopes(ana_lv123_intCrossAll, pred = "PFSCtry_cw", modx = "c19NormShouldCtry_cw", 
 #                          johnson_neyman = TRUE, jnplot = TRUE, confint = TRUE)
 ```
 
@@ -1432,7 +1432,7 @@ rm(tmp)
                 title='ProSocial Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
                 dep.var.labels = c("ProSocial"),
-                out="output/tables/proSo_CW.html")
+                out="output/tables/Longitudinal/Norms/proSo_CW.html")
 
 stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_lv123, ana_lv123_int, ana_lv123_intCrossAll, 
                       ana_lv123_intCrossOnly,
@@ -1447,12 +1447,12 @@ stargazer::stargazer(ana_lv0, ana_lv1, ana_lv1_int, ana_lv12, ana_lv12_int, ana_
                 title='ProSocial Group Mean Centering Analyses',
                 column.labels = c("randomInt", "level1", "level1+int", "level1-2", "level1-2+int", "level1-3", "level1-3+int"),
                 dep.var.labels = c("ProSocial"),
-                out="output/tables/oldproSo_CW.html")
+                out="output/tables/Longitudinal/Norms/oldproSo_CW.html")
 
 proSo_CW_out <- mlm_summary_out(ana_lv123_intCrossAll)
 
 stargazer::stargazer(proSo_CW_out, 
-                     out="output/tables/proSo_CW_relOnly.html",
+                     out="output/tables/Longitudinal/Norms/proSo_CW_relOnly.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
@@ -1465,13 +1465,13 @@ stargazer::stargazer(proSo_CW_out,
 ### calculate indirect effects
 ```{r}
 dt_indirect <- data.frame(
-# minus 1 SD disemp
+# minus 1 SD c19NormShould
   # positive emotion
   # within participant level
   calc_indirect_effect(
-    nameIn = "posEmo_minus1DisempSD",
-    pathA = paths_WB$posEmo_minus1DisempSD_A,
-    varA = paths_WB$posEmo_minus1DisempSD_varA,
+    nameIn = "posEmo_minus1c19NormShouldSD",
+    pathA = paths_WB$posEmo_minus1c19NormShouldSD_A,
+    varA = paths_WB$posEmo_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1479,9 +1479,9 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "posEmoPP_minus1DisempSD",
-    pathA = paths_WB$posEmoPP_minus1DisempSD_A,
-    varA = paths_WB$posEmoPP_minus1DisempSD_varA,
+    nameIn = "posEmoPP_minus1c19NormShouldSD",
+    pathA = paths_WB$posEmoPP_minus1c19NormShouldSD_A,
+    varA = paths_WB$posEmoPP_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
@@ -1490,9 +1490,9 @@ dt_indirect <- data.frame(
   
   # cross-level (path B stays on the idividual level)
   calc_indirect_effect(
-    nameIn = "posEmoCross_minus1DisempSD",
-    pathA = paths_WB$posEmoCross_minus1DisempSD_A,
-    varA = paths_WB$posEmoCross_minus1DisempSD_varA,
+    nameIn = "posEmoCross_minus1c19NormShouldSD",
+    pathA = paths_WB$posEmoCross_minus1c19NormShouldSD_A,
+    varA = paths_WB$posEmoCross_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1502,9 +1502,9 @@ dt_indirect <- data.frame(
   # negative emotion
   # within participant level
   calc_indirect_effect(
-    nameIn = "negEmo_minus1DisempSD",
-    pathA = paths_WB$negEmo_minus1DisempSD_A,
-    varA = paths_WB$negEmo_minus1DisempSD_varA,
+    nameIn = "negEmo_minus1c19NormShouldSD",
+    pathA = paths_WB$negEmo_minus1c19NormShouldSD_A,
+    varA = paths_WB$negEmo_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1512,9 +1512,9 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "negEmoPP_minus1DisempSD",
-    pathA = paths_WB$negEmoPP_minus1DisempSD_A,
-    varA = paths_WB$negEmoPP_minus1DisempSD_varA,
+    nameIn = "negEmoPP_minus1c19NormShouldSD",
+    pathA = paths_WB$negEmoPP_minus1c19NormShouldSD_A,
+    varA = paths_WB$negEmoPP_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
@@ -1522,9 +1522,9 @@ dt_indirect <- data.frame(
     conf = 0.99),
   # cross-level (path B stays on the idividual level)
   calc_indirect_effect(
-    nameIn = "negEmoCross_minus1DisempSD",
-    pathA = paths_WB$negEmoCross_minus1DisempSD_A,
-    varA = paths_WB$negEmoCross_minus1DisempSD_varA,
+    nameIn = "negEmoCross_minus1c19NormShouldSD",
+    pathA = paths_WB$negEmoCross_minus1c19NormShouldSD_A,
+    varA = paths_WB$negEmoCross_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1534,9 +1534,9 @@ dt_indirect <- data.frame(
   # perceived financial strain
   # within participant level
   calc_indirect_effect(
-    nameIn = "PFS_minus1DisempSD",
-    pathA = paths_WB$PFS_minus1DisempSD_A,
-    varA = paths_WB$PFS_minus1DisempSD_varA,
+    nameIn = "PFS_minus1c19NormShouldSD",
+    pathA = paths_WB$PFS_minus1c19NormShouldSD_A,
+    varA = paths_WB$PFS_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1544,9 +1544,9 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "PFSPP_minus1DisempSD",
-    pathA = paths_WB$PFSPP_minus1DisempSD_A,
-    varA = paths_WB$PFSPP_minus1DisempSD_varA,
+    nameIn = "PFSPP_minus1c19NormShouldSD",
+    pathA = paths_WB$PFSPP_minus1c19NormShouldSD_A,
+    varA = paths_WB$PFSPP_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
@@ -1554,22 +1554,22 @@ dt_indirect <- data.frame(
     conf = 0.99),
   # cross-level (path B stays on the idividual level)
   calc_indirect_effect(
-    nameIn = "PFSCross_minus1DisempSD",
-    pathA = paths_WB$PFSCross_minus1DisempSD_A,
-    varA = paths_WB$PFSCross_minus1DisempSD_varA,
+    nameIn = "PFSCross_minus1c19NormShouldSD",
+    pathA = paths_WB$PFSCross_minus1c19NormShouldSD_A,
+    varA = paths_WB$PFSCross_minus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
     rep = 5000, 
     conf = 0.99),
 
-# plus 1 SD disemp
+# plus 1 SD c19NormShould
   # positive emotion
   # within participant level
   calc_indirect_effect(
-    nameIn = "posEmo_plus1DisempSD",
-    pathA = paths_WB$posEmo_plus1DisempSD_A,
-    varA = paths_WB$posEmo_plus1DisempSD_varA,
+    nameIn = "posEmo_plus1c19NormShouldSD",
+    pathA = paths_WB$posEmo_plus1c19NormShouldSD_A,
+    varA = paths_WB$posEmo_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1577,9 +1577,9 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "posEmoPP_plus1DisempSD",
-    pathA = paths_WB$posEmoPP_plus1DisempSD_A,
-    varA = paths_WB$posEmoPP_plus1DisempSD_varA,
+    nameIn = "posEmoPP_plus1c19NormShouldSD",
+    pathA = paths_WB$posEmoPP_plus1c19NormShouldSD_A,
+    varA = paths_WB$posEmoPP_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
@@ -1588,9 +1588,9 @@ dt_indirect <- data.frame(
   
   # cross-level (path B stays on the idividual level)
   calc_indirect_effect(
-    nameIn = "posEmoCross_plus1DisempSD",
-    pathA = paths_WB$posEmoCross_plus1DisempSD_A,
-    varA = paths_WB$posEmoCross_plus1DisempSD_varA,
+    nameIn = "posEmoCross_plus1c19NormShouldSD",
+    pathA = paths_WB$posEmoCross_plus1c19NormShouldSD_A,
+    varA = paths_WB$posEmoCross_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1600,9 +1600,9 @@ dt_indirect <- data.frame(
   # negative emotion
   # within participant level
   calc_indirect_effect(
-    nameIn = "negEmo_plus1DisempSD",
-    pathA = paths_WB$negEmo_plus1DisempSD_A,
-    varA = paths_WB$negEmo_plus1DisempSD_varA,
+    nameIn = "negEmo_plus1c19NormShouldSD",
+    pathA = paths_WB$negEmo_plus1c19NormShouldSD_A,
+    varA = paths_WB$negEmo_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1610,9 +1610,9 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "negEmoPP_plus1DisempSD",
-    pathA = paths_WB$negEmoPP_plus1DisempSD_A,
-    varA = paths_WB$negEmoPP_plus1DisempSD_varA,
+    nameIn = "negEmoPP_plus1c19NormShouldSD",
+    pathA = paths_WB$negEmoPP_plus1c19NormShouldSD_A,
+    varA = paths_WB$negEmoPP_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
@@ -1620,9 +1620,9 @@ dt_indirect <- data.frame(
     conf = 0.99),
   # cross-level (path B stays on the idividual level)
   calc_indirect_effect(
-    nameIn = "negEmoCross_plus1DisempSD",
-    pathA = paths_WB$negEmoCross_plus1DisempSD_A,
-    varA = paths_WB$negEmoCross_plus1DisempSD_varA,
+    nameIn = "negEmoCross_plus1c19NormShouldSD",
+    pathA = paths_WB$negEmoCross_plus1c19NormShouldSD_A,
+    varA = paths_WB$negEmoCross_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1632,9 +1632,9 @@ dt_indirect <- data.frame(
   # perceived financial strain
   # within participant level
   calc_indirect_effect(
-    nameIn = "PFS_plus1DisempSD",
-    pathA = paths_WB$PFS_plus1DisempSD_A,
-    varA = paths_WB$PFS_plus1DisempSD_varA,
+    nameIn = "PFS_plus1c19NormShouldSD",
+    pathA = paths_WB$PFS_plus1c19NormShouldSD_A,
+    varA = paths_WB$PFS_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1642,9 +1642,9 @@ dt_indirect <- data.frame(
    conf = 0.99),
   # between participant level
   calc_indirect_effect(
-    nameIn = "PFSPP_plus1DisempSD",
-    pathA = paths_WB$PFSPP_plus1DisempSD_A,
-    varA = paths_WB$PFSPP_plus1DisempSD_varA,
+    nameIn = "PFSPP_plus1c19NormShouldSD",
+    pathA = paths_WB$PFSPP_plus1c19NormShouldSD_A,
+    varA = paths_WB$PFSPP_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WBPP_B,
     varB = paths_proSo$WBPP_varB,
     covAB = 0,
@@ -1652,9 +1652,9 @@ dt_indirect <- data.frame(
     conf = 0.99),
   # cross-level (path B stays on the idividual level)
   calc_indirect_effect(
-    nameIn = "PFSCross_plus1DisempSD",
-    pathA = paths_WB$PFSCross_plus1DisempSD_A,
-    varA = paths_WB$PFSCross_plus1DisempSD_varA,
+    nameIn = "PFSCross_plus1c19NormShouldSD",
+    pathA = paths_WB$PFSCross_plus1c19NormShouldSD_A,
+    varA = paths_WB$PFSCross_plus1c19NormShouldSD_varA,
     pathB = paths_proSo$WB_B,
     varB = paths_proSo$WB_varB,
     covAB = 0,
@@ -1665,7 +1665,7 @@ dt_indirect <- data.frame(
 dt_indirect <- matrix(unlist(t(dt_indirect)), byrow = T, nrow = ncol(dt_indirect)/3, ncol = 3)
 
 stargazer::stargazer(dt_indirect, 
-                     out="output/tables/indirect_effects.html",
+                     out="output/tables/Longitudinal/Norms/indirect_effects.html",
                      summary=FALSE,
                      type='html',
                      digits=3,
