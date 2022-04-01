@@ -55,7 +55,7 @@ calc_indirect_effect <- function(nameIn, pathA, pathB, varA, varB, covAB, rep, c
 # function to get summary statistics for MLM
 mlm_summary_out <- function(model) {
    
-  CI = lme4::confint.merMod(model, method = "boot", nsim = 500) # increase to 500 for serious run! 
+  CI = lme4::confint.merMod(model, method = "boot", nsim = 50) # increase to 500 for serious run! 
  
    dt <- data.frame(B = lme4::fixef(model),
       SE = summary(model)$coefficients[,2],
@@ -149,13 +149,11 @@ table(dtFullRed$coded_country)
             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
             negEmo =~ affAnx + affDepr + affNerv + affExh
             PFS =~ PFS01 + PFS02 + PFS03
-            disemp =~ fail01 + fail02 + fail03
             wellBe =~ happy + lifeSat + MLQ
             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03
             level:2
             posEmo =~ affCalm + affContent + affEnerg + affInsp + affRel
             negEmo =~ affAnx + affDepr + affNerv + affExh
-            disemp =~ fail01 + fail02 + fail03
             PFS =~ PFS01 + PFS02 + PFS03
             wellBe =~ happy + lifeSat + MLQ
             proSo =~ c19ProSo01 + c19ProSo02 + c19ProSo03'
@@ -587,8 +585,8 @@ plot(saveRes)
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw +  
-                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + 
+ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + 
+                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw +  
                     (1|coded_country), # each country can have its own intercept relative to the country
                   data = dtCross)
 
@@ -687,7 +685,7 @@ plot(saveRes)
 #### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw +  
+ana_lv1 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + 
                     (1|coded_country), # each country can have its own intercept relative to the country
                   data = dtCross)
 
@@ -708,7 +706,7 @@ plot(saveRes)
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw +   
+ana_lv12 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + 
                          negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw +  
                     (1|coded_country), # each country can have its own intercept relative to the country
                   data = dtCross)
@@ -780,7 +778,7 @@ plot(saveRes)
 #### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw +
+ana_lv1 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
                     (1|coded_country), # each country can have its own intercept relative to the country
                   data = dtCross)
 
@@ -802,7 +800,7 @@ plot(saveRes)
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
 ana_lv12 <- lme4::lmer(c19ProSo ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
-                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + WBCtry_cw +
+                         negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + WBCtry_cw + 
                     (1|coded_country), # each country can have its own intercept relative to the country
                   data = dtCross)
 
@@ -931,6 +929,7 @@ dt_indirect <- data.frame(
     rep = 5000, 
     conf = 0.99)
 )
+  
 
 dt_indirect <- matrix(unlist(t(dt_indirect)), byrow = T, nrow = ncol(dt_indirect)/3, ncol = 3)
 
@@ -1011,7 +1010,7 @@ autocorrelation; rm(saveRes, autocorrelation, var_ana_lv0, var_ana_lv1)
 #### level 2 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw +  
+ana_lv12 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw + 
                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
@@ -1037,7 +1036,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
 ana_lv123 <- lme4::lmer(WB ~ negEmo_cw + posEmo_cw + PFS_cw +  
-                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  
+                          negEmoPP_cw + posEmoPP_cw + PFSPP_cw + 
                       negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
@@ -1171,7 +1170,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw +  
+ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1220,9 +1219,9 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 3 predictors
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
-ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw +   
-                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw +  
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw +  
+ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw +  
+                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + 
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw +   
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1321,7 +1320,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 #### level 1 predictors
 Second step: Add all level 1 predictors
 ```{r}
-ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw +
+ana_lv1 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1346,7 +1345,7 @@ autocorrelation; rm(saveRes, autocorrelation)
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
 ana_lv12 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
-                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + WBPP_cw +
+                         negEmoPP_cw + posEmoPP_cw + PFSPP_cw + WBPP_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
@@ -1371,8 +1370,8 @@ autocorrelation; rm(saveRes, autocorrelation)
 If at all we are underestimating effects on level 2 due to potential small cluster size (Schunck, 2016)
 ```{r}
 ana_lv123 <- lme4::lmer(c19ProSo03 ~ negEmo_cw + posEmo_cw + PFS_cw + WB_cw + 
-                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + WBPP_cw +
-                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + WBCtry_cw +
+                      negEmoPP_cw + posEmoPP_cw + PFSPP_cw + WBPP_cw + 
+                      negEmoCtry_cw + posEmoCtry_cw + PFSCtry_cw + WBCtry_cw + 
                     (1|coded_country) + # each country can have its own intercept
                     (1|coded_country:PPID), # each person can have its own intercept relative to the country
                   data = dtLong)
