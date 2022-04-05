@@ -541,6 +541,30 @@ dtLong <- dtLong %>%
   )
 ```
 
+
+# Descriptives
+## Cross-Sectional/baseline
+```{r}
+# number of measurements/participants before cleaning
+nrow(dtFull)
+
+# number of measurements/participants after cleaning
+nrow(dtCross)
+
+# number of countries
+nrow(table(dtCross$coded_country))
+```
+
+## Longitudinal
+```{r}
+# number of participants that have at least two measurements
+length(unique(dtLong$PPID)) # should be same as nrow(dtFullRed)
+  
+# number of measurements in the longitudinal data
+sum(!is.na(dtLong$posEmo))
+```
+
+
 # Analysis Cross-Sectional
 ## Multilevel (Group mean centering)
 CMC quite useful when within-cluster and between-cluster slopes may differ and one is mainly interesting in the within-cluster slope (based on Raudenbush and Bryk). As we see (similar to  Hamaker & Grasman, 2014) grand-mean centering (see above) results in larger effects as within-cluster centering biases effects to be smaller (more conservative and still valid)
