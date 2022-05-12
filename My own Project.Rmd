@@ -969,6 +969,107 @@ stargazer::stargazer(dt_indirect,
 
 ```
 
+## Additional Analyses
+### Multilevel (Group mean centering)
+#### No Well-Being
+##### Negative Affect
+```{r}
+ana_lv12_negEmo_no <- lme4::lmer(c19ProSo ~ negEmo_cw + 
+                         negEmoCtry_cw +  
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_negEmo_no)
+```
+
+##### Positive Affect
+```{r}
+ana_lv12_posEmo_no <- lme4::lmer(c19ProSo ~ posEmo_cw +  
+                         posEmoCtry_cw +  
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_posEmo_no)
+```
+
+##### Financial Stress
+```{r}
+ana_lv12_PFS_no <- lme4::lmer(c19ProSo ~ PFS_cw +  
+                         PFSCtry_cw +  
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_PFS_no)
+```
+
+##### Disempowerment
+```{r}
+ana_lv12_disemp_no <- lme4::lmer(c19ProSo ~ disemp_cw +  
+                         disempCtry_cw +  
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_disemp_no)
+```
+
+#### Well-Being
+##### Negative Affect
+```{r}
+ana_lv12_negEmo <- lme4::lmer(c19ProSo ~ negEmo_cw + WB_cw + 
+                         negEmoCtry_cw + WBCtry_cw + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_negEmo)
+```
+
+##### Positive Affect
+```{r}
+ana_lv12_posEmo <- lme4::lmer(c19ProSo ~ posEmo_cw + WB_cw + 
+                         posEmoCtry_cw + WBCtry_cw + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_posEmo)
+```
+
+##### Financial Stress
+```{r}
+ana_lv12_PFS <- lme4::lmer(c19ProSo ~ PFS_cw + WB_cw + 
+                         PFSCtry_cw + WBCtry_cw + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_PFS)
+```
+
+##### Disempowerment
+```{r}
+ana_lv12_disemp <- lme4::lmer(c19ProSo ~ disemp_cw + WB_cw + 
+                         disempCtry_cw + WBCtry_cw + 
+                    (1|coded_country), # each country can have its own intercept relative to the country
+                  data = dtCross)
+
+summary(ana_lv12_disemp)
+```
+
+#### save tables
+```{r}
+ stargazer::stargazer(ana_lv12_negEmo_no, ana_lv12_posEmo_no, ana_lv12_PFS_no, ana_lv12_disemp_no,
+                      ana_lv12_negEmo, ana_lv12_posEmo, ana_lv12_PFS, ana_lv12_disemp,
+                summary=FALSE,
+                type='html',
+                rownames = TRUE,
+                initial.zero=FALSE,
+                ci = TRUE,
+                digits=2,
+                digits.extra = 2,
+                title='Simple Model',
+                dep.var.labels = c("ProSocial"),
+                out="output/tables/Cross/simple/proSo_CW.html")
+```
+
+
 
 # Analysis Longitudinal
 Only looking at contemporaneous effects (nothing lagged/causal)
@@ -1587,6 +1688,123 @@ stargazer::stargazer(dt_indirect,
 
 
 ```
+
+## Additional Analyses
+### Multilevel (Group mean centering)
+#### No Well-Being
+##### Negative Affect
+```{r}
+ana_lv123_negEmo_no <- lme4::lmer(c19ProSo03 ~ negEmo_cw +  
+                      negEmoPP_cw + 
+                      negEmoCtry_cw + 
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_negEmo_no)
+```
+
+##### Positive Affect
+```{r}
+ana_lv123_posEmo_no <- lme4::lmer(c19ProSo03 ~ posEmo_cw + 
+                      posEmoPP_cw + 
+                      posEmoCtry_cw +  
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_posEmo_no)
+```
+
+##### Financial Stress
+```{r}
+ana_lv123_PFS_no <- lme4::lmer(c19ProSo03 ~ PFS_cw + 
+                      PFSPP_cw + 
+                      PFSCtry_cw +  
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_PFS_no)
+```
+
+##### Disempowerment
+```{r}
+ana_lv123_disemp_no <- lme4::lmer(c19ProSo03 ~ disemp_cw + 
+                      disempPP_cw + 
+                      disempCtry_cw +  
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_disemp_no)
+```
+
+#### Well-Being
+##### Negative Affect
+```{r}
+ana_lv123_negEmo <- lme4::lmer(c19ProSo03 ~ negEmo_cw + WB_cw + 
+                      negEmoPP_cw + WBPP_cw + 
+                      negEmoCtry_cw + WBCtry_cw + 
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_negEmo)
+```
+
+##### Positive Affect
+```{r}
+ana_lv123_posEmo <- lme4::lmer(c19ProSo03 ~ posEmo_cw + WB_cw + 
+                      posEmoPP_cw + WBPP_cw + 
+                      posEmoCtry_cw + WBCtry_cw + 
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_posEmo)
+```
+
+##### Financial Stress
+```{r}
+ana_lv123_PFS <- lme4::lmer(c19ProSo03 ~ PFS_cw + WB_cw + 
+                      PFSPP_cw + WBPP_cw + 
+                      PFSCtry_cw + WBCtry_cw + 
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_PFS)
+```
+
+##### Disempowerment
+```{r}
+ana_lv123_disemp <- lme4::lmer(c19ProSo03 ~ disemp_cw + WB_cw + 
+                      disempPP_cw + WBPP_cw + 
+                      disempCtry_cw + WBCtry_cw + 
+                    (1|coded_country) + # each country can have its own intercept
+                    (1|coded_country:PPID), # each person can have its own intercept relative to the country
+                  data = dtLong)
+
+summary(ana_lv123_disemp)
+```
+
+#### save tables
+```{r}
+ stargazer::stargazer(ana_lv123_negEmo_no, ana_lv123_posEmo_no, ana_lv123_PFS_no, ana_lv123_disemp_no,
+                      ana_lv123_negEmo, ana_lv123_posEmo, ana_lv123_PFS, ana_lv123_disemp,
+                summary=FALSE,
+                type='html',
+                rownames = TRUE,
+                initial.zero=FALSE,
+                ci = TRUE,
+                digits=2,
+                digits.extra = 2,
+                title='Simple Model',
+                dep.var.labels = c("ProSocial"),
+                out="output/tables/Longitudinal/simple/proSo_CW.html")
+```
+
 
 ```{r}
 # run all
