@@ -573,59 +573,158 @@ dtLong <- dtLong %>%
 # prepare data from long to wide
 tmp <- dtLong %>%
   select(PPID, wave,
-         disemp_cw, disempPP_cw,
-         negEmo_cw, negEmoPP_cw,
-         c19ProSo03_cw, c19ProSo03PP_cw) %>%
+         disemp_cw, disempPP_cw, fail01,
+         negEmo_cw, negEmoPP_cw, negEmo,
+         c19ProSo03_cw, c19ProSo03PP_cw, c19ProSo03) %>%
   as.data.table()
 
 dt_CLPM <- data.table::dcast.data.table(tmp, PPID ~ wave, 
-                                    value.var = c("disemp_cw", "disempPP_cw", "negEmo_cw", "negEmoPP_cw", "c19ProSo03_cw", "c19ProSo03PP_cw"))
+                                    value.var = c("disemp_cw", "disempPP_cw", "fail01",
+                                                  "negEmo_cw", "negEmoPP_cw", "negEmo",
+                                                  "c19ProSo03_cw", "c19ProSo03PP_cw", "c19ProSo03"))
 
 ```
 
 
 # Analysis
-## CLPM
+## prep vars
 ```{r}
+# centered variables
+# tmp <- dt_CLPM %>%
+#   transmute(
+#     xA_w1 = disemp_cw_4,
+#     xA_w2 = disemp_cw_5,
+#     xA_w3 = disemp_cw_6,
+#     xB_w1 = negEmo_cw_4,
+#     xB_w2 = negEmo_cw_5,
+#     xB_w3 = negEmo_cw_6,
+#     YA_w1 = c19ProSo03_cw_4,
+#     YA_w2 = c19ProSo03_cw_5,
+#     YA_w3 = c19ProSo03_cw_6,
+#     )
+
+# uncentered variables
 tmp <- dt_CLPM %>%
   transmute(
-    xA_w1 = disemp_cw_4,
-    xA_w2 = disemp_cw_5,
-    xA_w3 = disemp_cw_6,
-    xB_w1 = negEmo_cw_4,
-    xB_w2 = negEmo_cw_5,
-    xB_w3 = negEmo_cw_6,
-    YA_w1 = c19ProSo03_cw_4,
-    YA_w2 = c19ProSo03_cw_5,
-    YA_w3 = c19ProSo03_cw_6,
+    xA_w1 = fail01_4,
+    xA_w2 = fail01_5,
+    xA_w3 = fail01_6,
+    xB_w1 = negEmo_4,
+    xB_w2 = negEmo_5,
+    xB_w3 = negEmo_6,
+    yA_w1 = c19ProSo03_4,
+    yA_w2 = c19ProSo03_5,
+    yA_w3 = c19ProSo03_6,
     )
+```
 
+In a nutshell: use RICLPM but compare to CLPM:
+https://johnflournoy.science/2017/10/20/riclpm-lavaan-demo/
 
+## CLPM
+https://jeroendmulder.github.io/RI-CLPM/
+```{r}
 CLPM <- '
   # Estimate the lagged effects between the observed variables.
-  xA_w2 + YA_w2 ~ xA_w1 + YA_w1
-  xA_w3 + YA_w3 ~ xA_w2 + YA_w2
+  xA_w2 + xB_w2 + yA_w2 ~ xA_w1 + xB_w1 + yA_w1
+  xA_w3 + xB_w3 + yA_w3 ~ xA_w2 + xB_w2 + yA_w2
 
   # Estimate the covariance between the observed variables at the first wave. 
-  xA_w1 ~~ YA_w1 # Covariance
+  xA_w1 ~~ yA_w1 # Covariance
+  xA_w1 ~~ xB_w1 # Covariance
+  xB_w1 ~~ yA_w1 # Covariance
   
   # Estimate the covariances between the residuals of the observed variables.
-  xA_w2 ~~ YA_w2
-  xA_w3 ~~ YA_w3
+  xA_w2 ~~ yA_w2
+  xA_w2 ~~ xB_w2
+  xB_w2 ~~ yA_w2
+  xA_w3 ~~ yA_w3
+  xA_w3 ~~ xB_w3
+  xB_w3 ~~ yA_w3
   
   # Estimate the (residual) variance of the observed variables.
   xA_w1 ~~ xA_w1 # Variances
-  YA_w1 ~~ YA_w1 
+  xB_w1 ~~ xB_w1 # Variances
+  yA_w1 ~~ yA_w1 
   xA_w2 ~~ xA_w2 # Residual variances
-  YA_w2 ~~ YA_w2 
+  xB_w2 ~~ xB_w2 # Residual variances
+  yA_w2 ~~ yA_w2 
   xA_w3 ~~ xA_w3 
-  YA_w3 ~~ YA_w3
+  xB_w3 ~~ xB_w3 
+  yA_w3 ~~ yA_w3
 '
 
 CLPM.fit <- lavaan(CLPM, data = tmp, missing = 'ML', meanstructure = T, int.ov.free = T) 
-summary(CLPM.fit, standardized = T)
 
+summary(CLPM.fit, standardized = T, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = CLPM.fit, coefs = T, covs = T)
 
+```
+
+## RI-CLPM
+```{r}
+
+RICLPM <- '
+  # Create between components (random intercepts)
+  RI_xA =~ 1*xA_w1 + 1*xA_w2 + 1*xA_w3
+  RI_xB =~ 1*xB_w1 + 1*xB_w2 + 1*xB_w3
+  RI_yA =~ 1*yA_w1 + 1*yA_w2 + 1*yA_w3
+  
+  # Create within-person centered variables
+  wc_xA_w1 =~ 1*xA_w1
+  wc_xA_w2 =~ 1*xA_w2
+  wc_xA_w3 =~ 1*xA_w3 
+  
+  wc_xB_w1 =~ 1*xB_w1
+  wc_xB_w2 =~ 1*xB_w2
+  wc_xB_w3 =~ 1*xB_w3 
+  
+  wc_yA_w1 =~ 1*yA_w1
+  wc_yA_w2 =~ 1*yA_w2
+  wc_yA_w3 =~ 1*yA_w3
+ 
+
+  # Estimate the lagged effects between the within-person centered variables.
+  wc_xA_w2 + wc_xB_w2 + wc_yA_w2 ~ wc_xA_w1 + wc_xB_w1 + wc_yA_w1
+  wc_xA_w3 + wc_xB_w3 + wc_yA_w3 ~ wc_xA_w2 + wc_xB_w2 + wc_yA_w2
+
+  # Estimate the covariance between the within-person centered variables at the first wave. 
+  wc_xA_w1 ~~ wc_yA_w1 # Covariance
+  wc_xA_w1 ~~ wc_xB_w1 # Covariance
+  wc_xB_w1 ~~ wc_yA_w1 # Covariance
+  
+  # Estimate the covariances between the residuals of the within-person centered variables (the innovations).
+  wc_xA_w2 ~~ wc_yA_w2 
+  wc_xA_w2 ~~ wc_xB_w2 
+  wc_xB_w2 ~~ wc_yA_w2 
+  wc_xA_w3 ~~ wc_yA_w3 
+  wc_xA_w3 ~~ wc_xB_w3 
+  wc_xB_w3 ~~ wc_yA_w3 
+  
+  # Estimate the variance and covariance of the random intercepts. 
+  RI_xA ~~ RI_xA
+  RI_xB ~~ RI_xB
+  RI_yA ~~ RI_yA
+  RI_xA ~~ RI_xB
+  RI_xA ~~ RI_yA
+  RI_xB ~~ RI_yA
+
+  # Estimate the (residual) variance of the within-person centered variables.
+  wc_xA_w1 ~~ wc_xA_w1 # Variances
+  wc_xB_w1 ~~ wc_xB_w1 # Variances
+  wc_yA_w1 ~~ wc_yA_w1 
+  wc_xA_w2 ~~ wc_xA_w2 # Variances
+  wc_xB_w2 ~~ wc_xB_w2 # Variances
+  wc_yA_w2 ~~ wc_yA_w2 
+  wc_xA_w3 ~~ wc_xA_w3 # Variances
+  wc_xB_w3 ~~ wc_xB_w3 # Variances
+  wc_yA_w3 ~~ wc_yA_w3 
+
+'
+RICLPM.fit <- lavaan(RICLPM, data = tmp, missing = 'ML', meanstructure = T, int.ov.free = T)
+
+summary(RICLPM.fit, standardized = T, fit.measures=TRUE)
+lavaanPlot::lavaanPlot(model = RICLPM.fit, coefs = T, covs = T)
 ```
 
 
