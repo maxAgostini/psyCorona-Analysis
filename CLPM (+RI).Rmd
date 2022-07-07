@@ -623,6 +623,9 @@ https://johnflournoy.science/2017/10/20/riclpm-lavaan-demo/
 
 ## CLPM
 https://jeroendmulder.github.io/RI-CLPM/
+https://osf.io/jyz2u/
+https://www.tandfonline.com/doi/epub/10.1080/10705511.2020.1784738?needAccess=true
+https://github.com/jflournoy/riclpmr
 ```{r}
 CLPM <- '
   # Estimate the lagged effects between the observed variables.
